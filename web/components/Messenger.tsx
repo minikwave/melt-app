@@ -132,6 +132,8 @@ function MessageBubble({ message, currentUserId, isCreator }: any) {
   const isCreatorMessage = message.type === 'creator_post' || message.type === 'creator_reply'
   const isDonationMessage = message.type === 'donation' || message.donationAmount
   const isRetweetMessage = message.isRetweet || message.type === 'retweet'
+  const isRead = message.read !== false // 기본값은 true
+  const isSent = message.sent !== false // 기본값은 true
   
   // 메시지 타입별 스타일 결정
   let bubbleStyle = ''
@@ -182,9 +184,29 @@ function MessageBubble({ message, currentUserId, isCreator }: any) {
           {message.content}
         </p>
 
-        {/* 시간 */}
-        <div className="text-xs opacity-70">
-          {formatDistanceToNow(new Date(message.createdAt || message.created_at), { addSuffix: true })}
+        {/* 시간 및 상태 */}
+        <div className="flex items-center justify-between">
+          <div className="text-xs opacity-70">
+            {formatDistanceToNow(new Date(message.createdAt || message.created_at), { addSuffix: true })}
+          </div>
+          {isMyMessage && (
+            <div className="flex items-center gap-1">
+              {!isSent && (
+                <span className="text-xs opacity-50">전송 중...</span>
+              )}
+              {isSent && !isRead && (
+                <span className="text-xs opacity-50">✓</span>
+              )}
+              {isSent && isRead && (
+                <span className="text-xs opacity-70">✓✓</span>
+              )}
+            </div>
+          )}
+          {!isMyMessage && !isRead && (
+            <span className="px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[10px] font-semibold">
+              새 메시지
+            </span>
+          )}
         </div>
       </div>
     </div>
@@ -193,18 +215,33 @@ function MessageBubble({ message, currentUserId, isCreator }: any) {
 
 // DM 버블 (크리에이터만 보는 비공개 메시지)
 function DmBubble({ dm, chzzkChannelId, queryClient }: any) {
+  const isRead = dm.read !== false
+  const isSent = dm.sent !== false
+  
   return (
     <div className="flex justify-start">
-      <div className="max-w-[75%] rounded-2xl px-4 py-3 space-y-1.5 bg-neutral-800 border border-neutral-700">
+      <div className={`max-w-[75%] rounded-2xl px-4 py-3 space-y-1.5 bg-neutral-800 border ${
+        !isRead ? 'border-purple-500/50' : 'border-neutral-700'
+      }`}>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-sm">{dm.display_name || dm.author?.displayName}</span>
           <span className="px-2 py-0.5 rounded bg-purple-500/30 text-purple-300 text-[10px] font-semibold">
             비공개
           </span>
+          {!isRead && (
+            <span className="px-1.5 py-0.5 rounded bg-blue-500/30 text-blue-300 text-[10px] font-semibold">
+              새 메시지
+            </span>
+          )}
         </div>
         <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{dm.content}</p>
-        <div className="text-xs opacity-70">
-          {formatDistanceToNow(new Date(dm.created_at || dm.createdAt), { addSuffix: true })}
+        <div className="flex items-center justify-between">
+          <div className="text-xs opacity-70">
+            {formatDistanceToNow(new Date(dm.created_at || dm.createdAt), { addSuffix: true })}
+          </div>
+          {!isSent && (
+            <span className="text-xs opacity-50">전송 중...</span>
+          )}
         </div>
         <div className="flex gap-2 mt-2">
           <button

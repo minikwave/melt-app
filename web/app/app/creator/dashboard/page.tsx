@@ -6,7 +6,8 @@ import { api } from '@/lib/api'
 import { useState } from 'react'
 
 export default function CreatorDashboard() {
-  const [selectedChannel, setSelectedChannel] = useState<string>('')
+  const [selectedChannel, setSelectedChannel] = useState<string>('channel_creator_1')
+  const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week')
 
   const { data: inbox } = useQuery({
     queryKey: ['creator-inbox', selectedChannel],
@@ -17,9 +18,9 @@ export default function CreatorDashboard() {
   })
 
   const { data: stats } = useQuery({
-    queryKey: ['creator-stats', selectedChannel],
-    queryFn: () => api.get('/creator/stats/summary', {
-      params: { chzzkChannelId: selectedChannel, range: '30d' },
+    queryKey: ['creator-stats', selectedChannel, period],
+    queryFn: () => api.get('/creator/stats', {
+      params: { chzzkChannelId: selectedChannel, period },
     }),
     enabled: !!selectedChannel,
   })
@@ -46,14 +47,82 @@ export default function CreatorDashboard() {
             </Link>
           </div>
 
+          {/* 통계 섹션 */}
           {stats?.data && (
-            <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700 space-y-2">
-              <h2 className="font-bold">통계 (최근 30일)</h2>
-              <div className="text-sm space-y-1">
-                <p>확정 후원: {stats.data.confirmed}건</p>
-                <p>미확정: {stats.data.pending}건</p>
-                <p>총액: {stats.data.totalAmount?.toLocaleString()}원</p>
+            <div className="space-y-4">
+              {/* 기간 선택 */}
+              <div className="flex gap-2">
+                {(['day', 'week', 'month'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      period === p
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                    }`}
+                  >
+                    {p === 'day' && '오늘'}
+                    {p === 'week' && '이번 주'}
+                    {p === 'month' && '이번 달'}
+                  </button>
+                ))}
               </div>
+
+              {/* 통계 카드 */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
+                  <div className="text-sm text-neutral-400 mb-1">총 후원액</div>
+                  <div className="text-2xl font-bold">
+                    {stats.data.totalAmount?.toLocaleString()}원
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
+                  <div className="text-sm text-neutral-400 mb-1">후원 건수</div>
+                  <div className="text-2xl font-bold">{stats.data.totalCount}건</div>
+                </div>
+                <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
+                  <div className="text-sm text-neutral-400 mb-1">평균 후원액</div>
+                  <div className="text-2xl font-bold">
+                    {stats.data.averageAmount?.toLocaleString()}원
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
+                  <div className="text-sm text-neutral-400 mb-1">기간</div>
+                  <div className="text-lg font-semibold">
+                    {period === 'day' && '오늘'}
+                    {period === 'week' && '이번 주'}
+                    {period === 'month' && '이번 달'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Top Supporters */}
+              {stats.data.topSupporters && stats.data.topSupporters.length > 0 && (
+                <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
+                  <h3 className="font-bold mb-3">Top Supporters</h3>
+                  <div className="space-y-2">
+                    {stats.data.topSupporters.map((supporter: any, index: number) => (
+                      <div
+                        key={supporter.chzzk_user_id}
+                        className="flex items-center justify-between p-2 rounded-lg bg-neutral-900"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-neutral-400">
+                            #{index + 1}
+                          </span>
+                          <span className="font-semibold">
+                            {supporter.display_name || supporter.chzzk_user_id}
+                          </span>
+                        </div>
+                        <div className="text-sm text-neutral-400">
+                          {supporter.totalAmount?.toLocaleString()}원 ({supporter.count}건)
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

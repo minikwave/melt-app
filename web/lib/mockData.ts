@@ -76,6 +76,8 @@ export const mockMessages = [
     createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
     donationAmount: null,
     isRetweet: false,
+    read: true,
+    sent: true,
   },
   {
     id: 'msg-2',
@@ -90,6 +92,8 @@ export const mockMessages = [
     createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     donationAmount: 10000,
     isRetweet: false,
+    read: true,
+    sent: true,
   },
   {
     id: 'msg-3',
@@ -104,6 +108,8 @@ export const mockMessages = [
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     donationAmount: 5000,
     isRetweet: false,
+    read: false,
+    sent: true,
   },
   {
     id: 'msg-4',
@@ -118,6 +124,8 @@ export const mockMessages = [
     createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     donationAmount: null,
     isRetweet: true,
+    read: true,
+    sent: true,
   },
 ]
 
@@ -131,6 +139,8 @@ export const mockDms = [
     visibility: 'private',
     content: '안녕하세요! 좋은 방송 감사합니다.',
     created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+    read: false,
+    sent: true,
   },
   {
     id: 'dm-2',
@@ -141,6 +151,8 @@ export const mockDms = [
     visibility: 'private',
     content: '다음 방송도 기대하고 있습니다!',
     created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    read: true,
+    sent: true,
   },
 ]
 
@@ -268,6 +280,40 @@ export const mockApiResponses = {
     }
     return {
       data: { success: true },
+    }
+  },
+  '/creator/stats': (period: string = 'week') => {
+    // 개발 모드: 크리에이터 통계
+    const now = new Date()
+    const periodDays = period === 'day' ? 1 : period === 'week' ? 7 : 30
+    
+    // 더미 통계 데이터 생성
+    const dailyStats = Array.from({ length: periodDays }, (_, i) => {
+      const date = new Date(now)
+      date.setDate(date.getDate() - (periodDays - 1 - i))
+      return {
+        date: date.toISOString().split('T')[0],
+        amount: Math.floor(Math.random() * 50000) + 10000,
+        count: Math.floor(Math.random() * 5) + 1,
+      }
+    })
+    
+    const totalAmount = dailyStats.reduce((sum, day) => sum + day.amount, 0)
+    const totalCount = dailyStats.reduce((sum, day) => sum + day.count, 0)
+    
+    return {
+      data: {
+        period,
+        totalAmount,
+        totalCount,
+        averageAmount: Math.floor(totalAmount / totalCount),
+        dailyStats,
+        topSupporters: [
+          { chzzk_user_id: 'viewer_1', display_name: '시청자1', totalAmount: 50000, count: 3 },
+          { chzzk_user_id: 'viewer_2', display_name: '시청자2', totalAmount: 30000, count: 2 },
+          { chzzk_user_id: 'viewer_3', display_name: '시청자3', totalAmount: 20000, count: 1 },
+        ],
+      },
     }
   },
   '/onboarding/status': () => {

@@ -265,6 +265,15 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     return typeof handler === 'function' ? handler() : handler
   }
 
+  // /creator/stats - 크리에이터 통계
+  if (url === '/creator/stats' || url.startsWith('/creator/stats')) {
+    const handler = mockApiResponses['/creator/stats']
+    if (handler && typeof handler === 'function') {
+      const period = params?.period || 'week'
+      return handler(period)
+    }
+  }
+
   // /conversations/:id/read - 읽음 처리
   if (url.match(/\/conversations\/[^/]+\/read/)) {
     return { data: { success: true } }
