@@ -1,0 +1,38 @@
+{
+  "name": "melt-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "dev:mock": "cross-env NEXT_PUBLIC_FORCE_MOCK=true next dev",
+    "build": "next build",
+    "build:static": "cross-env NEXT_PUBLIC_FORCE_MOCK=true next build",
+    "start": "next start",
+    "serve": "cross-env NEXT_PUBLIC_FORCE_MOCK=true next build && npx http-server .next/static -p 3000 -c-1 --cors",
+    "preview": "cross-env NEXT_PUBLIC_FORCE_MOCK=true next build && next start -p 3000",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.17.0",
+    "axios": "^1.6.2",
+    "date-fns": "^3.0.6",
+    "js-cookie": "^3.0.5",
+    "next": "14.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.16",
+    "cross-env": "^10.1.0",
+    "eslint": "^8.56.0",
+    "eslint-config-next": "14.0.4",
+    "http-server": "^14.1.1",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.3.3"
+  }
+}
