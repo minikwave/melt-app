@@ -274,6 +274,56 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     }
   }
 
+  // /my/activity - 내 활동 내역
+  if (url === '/my/activity' || url.startsWith('/my/activity')) {
+    const handler = mockApiResponses['/my/activity']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /notifications - 알림 목록
+  if (url === '/notifications' || url.startsWith('/notifications')) {
+    // /notifications/:id/read 패턴 체크
+    if (url.match(/\/notifications\/[^/]+\/read/)) {
+      const handler = mockApiResponses['/notifications/:id/read']
+      if (handler && typeof handler === 'function') {
+        const id = url.split('/')[2]
+        return handler(id)
+      }
+    }
+    // /notifications/unread-count 패턴 체크
+    if (url === '/notifications/unread-count' || url.startsWith('/notifications/unread-count')) {
+      const handler = mockApiResponses['/notifications/unread-count']
+      return typeof handler === 'function' ? handler() : handler
+    }
+    // 일반 알림 목록
+    const handler = mockApiResponses['/notifications']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /admin/stats - 관리자 통계
+  if (url === '/admin/stats' || url.startsWith('/admin/stats')) {
+    const handler = mockApiResponses['/admin/stats']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /admin/users - 관리자 유저 목록
+  if (url === '/admin/users' || url.startsWith('/admin/users')) {
+    const handler = mockApiResponses['/admin/users']
+    return typeof handler === 'function' ? handler(params) : handler
+  }
+
+  // /admin/channels - 관리자 채널 목록
+  if (url === '/admin/channels' || url.startsWith('/admin/channels')) {
+    const handler = mockApiResponses['/admin/channels']
+    return typeof handler === 'function' ? handler(params) : handler
+  }
+
+  // /admin/messages/reported - 신고된 메시지 목록
+  if (url === '/admin/messages/reported' || url.startsWith('/admin/messages/reported')) {
+    const handler = mockApiResponses['/admin/messages/reported']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
   // /conversations/:id/read - 읽음 처리
   if (url.match(/\/conversations\/[^/]+\/read/)) {
     return { data: { success: true } }

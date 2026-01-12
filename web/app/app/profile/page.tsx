@@ -160,6 +160,22 @@ export default function ProfilePage() {
 
         {/* 메뉴 */}
         <div className="space-y-2">
+          <Link
+            href="/app/my/activity"
+            className="block p-4 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors"
+          >
+            <div className="font-semibold">내 활동</div>
+            <div className="text-sm text-neutral-400">메시지, 후원, 팔로우 내역</div>
+          </Link>
+
+          <Link
+            href="/app/notifications"
+            className="block p-4 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors relative"
+          >
+            <div className="font-semibold">알림</div>
+            <div className="text-sm text-neutral-400">메시지 및 후원 알림</div>
+          </Link>
+
           {isCreator && (
             <Link
               href="/app/creator/settings"

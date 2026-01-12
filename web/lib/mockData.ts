@@ -282,6 +282,184 @@ export const mockApiResponses = {
       data: { success: true },
     }
   },
+  '/my/activity': () => {
+    // 개발 모드: 내 활동 내역
+    return {
+      data: {
+        messages: [
+          {
+            id: 'my-msg-1',
+            channel_id: 'channel-1',
+            channel_name: '크리에이터 1의 채널',
+            content: '안녕하세요! 좋은 방송 감사합니다.',
+            type: 'dm',
+            visibility: 'private',
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          },
+          {
+            id: 'my-msg-2',
+            channel_id: 'channel-1',
+            channel_name: '크리에이터 1의 채널',
+            content: '치즈 10000원과 함께 보내는 응원 메시지!',
+            type: 'donation',
+            visibility: 'public',
+            donation_amount: 10000,
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+          },
+        ],
+        donations: [
+          {
+            id: 'donation-1',
+            channel_id: 'channel-1',
+            channel_name: '크리에이터 1의 채널',
+            amount: 10000,
+            status: 'CONFIRMED',
+            message: '치즈 10000원과 함께 보내는 응원 메시지!',
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+          },
+          {
+            id: 'donation-2',
+            channel_id: 'channel-2',
+            channel_name: '크리에이터 2의 채널',
+            amount: 5000,
+            status: 'OCCURRED',
+            message: '항상 응원합니다!',
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
+          },
+        ],
+        following: [
+          {
+            chzzk_channel_id: 'channel_creator_1',
+            name: '크리에이터 1의 채널',
+            owner_name: '크리에이터1',
+            follower_count: 1234,
+            followed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
+          },
+          {
+            chzzk_channel_id: 'channel_creator_2',
+            name: '크리에이터 2의 채널',
+            owner_name: '크리에이터2',
+            follower_count: 567,
+            followed_at: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+          },
+        ],
+      },
+    }
+  },
+  '/notifications': () => {
+    // 개발 모드: 알림 목록
+    return {
+      data: {
+        notifications: [
+          {
+            id: 'notif-1',
+            type: 'message',
+            title: '새 메시지',
+            content: '크리에이터 1의 채널에서 답장을 받았습니다.',
+            read: false,
+            created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+            link: '/app/channels/channel_creator_1',
+          },
+          {
+            id: 'notif-2',
+            type: 'donation',
+            title: '후원 확정',
+            content: '크리에이터 1의 채널에서 후원이 확정되었습니다.',
+            read: false,
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+            link: '/app/channels/channel_creator_1',
+          },
+          {
+            id: 'notif-3',
+            type: 'follow',
+            title: '새 팔로워',
+            content: '새로운 팔로워가 생겼습니다.',
+            read: true,
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+            link: '/app/profile',
+          },
+        ],
+        unreadCount: 2,
+      },
+    }
+  },
+  '/notifications/unread-count': () => {
+    // 개발 모드: 읽지 않은 알림 수
+    return {
+      data: { unreadCount: 2 },
+    }
+  },
+  '/notifications/:id/read': (id: string) => {
+    // 개발 모드: 알림 읽음 처리
+    return {
+      data: { success: true },
+    }
+  },
+  '/admin/stats': () => {
+    // 개발 모드: 관리자 통계
+    return {
+      data: {
+        totalUsers: 1234,
+        totalCreators: 56,
+        totalMessages: 5678,
+        totalDonations: 890,
+        totalDonationAmount: 12345678,
+        recentActivity: [
+          { type: 'user_signup', count: 12, period: 'today' },
+          { type: 'message', count: 234, period: 'today' },
+          { type: 'donation', count: 45, period: 'today' },
+        ],
+      },
+    }
+  },
+  '/admin/users': (params?: any) => {
+    // 개발 모드: 관리자 유저 목록
+    const search = params?.search || ''
+    const filtered = mockUsers.filter((u) =>
+      u.display_name?.toLowerCase().includes(search.toLowerCase()) ||
+      u.chzzk_user_id?.toLowerCase().includes(search.toLowerCase())
+    )
+    return {
+      data: {
+        users: filtered,
+        total: filtered.length,
+      },
+    }
+  },
+  '/admin/channels': (params?: any) => {
+    // 개발 모드: 관리자 채널 목록
+    const search = params?.search || ''
+    const filtered = mockChannels.filter((c) =>
+      c.name?.toLowerCase().includes(search.toLowerCase()) ||
+      c.chzzk_channel_id?.toLowerCase().includes(search.toLowerCase())
+    )
+    return {
+      data: {
+        channels: filtered,
+        total: filtered.length,
+      },
+    }
+  },
+  '/admin/messages/reported': () => {
+    // 개발 모드: 신고된 메시지 목록
+    return {
+      data: {
+        reportedMessages: [
+          {
+            id: 'reported-1',
+            message_id: 'msg-1',
+            channel_id: 'channel-1',
+            channel_name: '크리에이터 1의 채널',
+            author: 'viewer_1',
+            content: '신고된 메시지 내용...',
+            report_reason: '스팸',
+            report_count: 3,
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          },
+        ],
+      },
+    }
+  },
   '/creator/stats': (period: string = 'week') => {
     // 개발 모드: 크리에이터 통계
     const now = new Date()

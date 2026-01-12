@@ -78,6 +78,19 @@ export default function AppPage() {
 
         {/* Quick Actions */}
         <div className="space-y-3">
+          {/* 알림 링크 */}
+          <Link
+            href="/app/notifications"
+            className="block w-full rounded-xl py-4 px-4 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors relative"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-semibold mb-1">알림</div>
+                <div className="text-sm text-neutral-400">메시지 및 후원 알림</div>
+              </div>
+            </div>
+          </Link>
+
           {!isCreator && (
             <>
               <Link
@@ -95,6 +108,17 @@ export default function AppPage() {
                 <div className="text-sm text-neutral-400">검색 및 팔로우</div>
               </Link>
             </>
+          )}
+
+          {/* 관리자 메뉴 */}
+          {currentUser.role === 'admin' && (
+            <Link
+              href="/app/admin"
+              className="block w-full rounded-xl py-4 px-4 bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+            >
+              <div className="font-semibold mb-1">관리자 대시보드</div>
+              <div className="text-sm text-neutral-400">시스템 관리</div>
+            </Link>
           )}
 
           {isCreator && (
