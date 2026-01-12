@@ -40,9 +40,8 @@ export default function DonateCompletePage() {
 
     setIsSubmitting(true)
     try {
-      // 후원 발생 등록 (OCCURRED)
-      await api.post('/donations/occurred', {
-        intentId,
+      // 후원 완료 후 메시지 등록 (자동으로 OCCURRED 상태로 변경)
+      await api.post(`/donations/${intentId}/complete`, {
         message: message.trim(),
       })
 
@@ -50,7 +49,7 @@ export default function DonateCompletePage() {
       localStorage.removeItem('melt_intent_id')
       localStorage.removeItem('melt_donation_message')
 
-      // 채널 페이지로 이동
+      // 채널 페이지로 이동 (피드 새로고침)
       router.push(`/app/channels/${chzzkChannelId}`)
     } catch (error: any) {
       console.error('Register donation error:', error)

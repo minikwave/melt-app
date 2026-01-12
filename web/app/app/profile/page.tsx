@@ -10,18 +10,56 @@ export default function ProfilePage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [displayName, setDisplayName] = useState('')
 
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
   })
 
+  const updateProfileMutation = useMutation({
+    mutationFn: (displayName: string) => api.put('/profile', { display_name: displayName }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      setIsEditing(false)
+      alert('프로필이 업데이트되었습니다.')
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.error || '프로필 업데이트에 실패했습니다.')
+    },
+  })
+
   const logoutMutation = useMutation({
     mutationFn: () => api.post('/auth/logout'),
     onSuccess: () => {
+      // 개발 모드: 쿠키 정리
+      if (typeof window !== 'undefined') {
+        const Cookies = require('js-cookie').default
+        Cookies.remove('melt_session', { path: '/' })
+        Cookies.remove('mock_user_id', { path: '/' })
+        Cookies.remove('mock_user_role', { path: '/' })
+        Cookies.remove('mock_user_name', { path: '/' })
+        Cookies.remove('mock_onboarding_complete', { path: '/' })
+      }
       router.push('/')
     },
   })
+
+  const handleEdit = () => {
+    if (user?.data?.user) {
+      setDisplayName(user.data.user.display_name || user.data.user.chzzk_user_id)
+      setIsEditing(true)
+    }
+  }
+
+  const handleSave = () => {
+    if (!displayName.trim()) {
+      alert('이름을 입력해주세요')
+      return
+    }
+    updateProfileMutation.mutate(displayName.trim())
+  }
 
   const handleLogout = () => {
     if (confirm('로그아웃 하시겠습니까?')) {
@@ -52,10 +90,51 @@ export default function ProfilePage() {
         {/* 프로필 정보 */}
         <div className="p-6 rounded-xl bg-neutral-800 border border-neutral-700 space-y-4">
           <div>
-            <label className="text-sm text-neutral-400">닉네임</label>
-            <p className="text-lg font-semibold mt-1">
-              {currentUser.display_name || currentUser.chzzk_user_id}
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-neutral-400">닉네임</label>
+              {!isEditing && (
+                <button
+                  onClick={handleEdit}
+                  className="text-xs px-3 py-1 rounded-lg bg-neutral-700 hover:bg-neutral-600 transition-colors"
+                >
+                  수정
+                </button>
+              )}
+            </div>
+            {isEditing ? (
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-blue-500"
+                  placeholder="닉네임을 입력하세요"
+                  maxLength={20}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={updateProfileMutation.isPending}
+                    className="flex-1 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors disabled:opacity-50 text-sm font-semibold"
+                  >
+                    {updateProfileMutation.isPending ? '저장 중...' : '저장'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false)
+                      setDisplayName('')
+                    }}
+                    className="px-4 py-2 rounded-lg bg-neutral-700 hover:bg-neutral-600 transition-colors text-sm"
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-lg font-semibold mt-1">
+                {currentUser.display_name || currentUser.chzzk_user_id}
+              </p>
+            )}
           </div>
 
           <div>

@@ -21,11 +21,22 @@ export default function CreatorMessagesPage() {
     enabled: !!selectedChannel,
   })
 
+  // 읽지 않은 DM 수
+  const { data: unreadCount } = useQuery({
+    queryKey: ['creator-inbox-unread-count', selectedChannel],
+    queryFn: () => api.get('/creator/inbox/unread-count', {
+      params: { chzzkChannelId: selectedChannel },
+    }),
+    enabled: !!selectedChannel,
+    refetchInterval: 10000,
+  })
+
   const replyMutation = useMutation({
     mutationFn: ({ messageId, content, visibility }: any) =>
       api.post(`/messages/${messageId}/reply`, { content, visibility }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['creator-inbox', selectedChannel] })
+      queryClient.invalidateQueries({ queryKey: ['creator-inbox-unread-count', selectedChannel] })
     },
   })
 
@@ -34,6 +45,7 @@ export default function CreatorMessagesPage() {
       api.post(`/messages/${messageId}/retweet`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['creator-inbox', selectedChannel] })
+      queryClient.invalidateQueries({ queryKey: ['creator-inbox-unread-count', selectedChannel] })
       queryClient.invalidateQueries({ queryKey: ['feed', selectedChannel] })
     },
   })
@@ -61,7 +73,14 @@ export default function CreatorMessagesPage() {
           <Link href="/app/creator/dashboard" className="text-neutral-400 hover:text-white">
             ← 뒤로
           </Link>
-          <h1 className="text-xl font-bold">메시지 관리</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold">메시지 관리</h1>
+            {unreadCount?.data?.unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-purple-500 text-white text-xs font-semibold">
+                {unreadCount.data.unreadCount}
+              </span>
+            )}
+          </div>
           <div className="w-8" />
         </div>
 

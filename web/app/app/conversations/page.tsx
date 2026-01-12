@@ -16,11 +16,19 @@ export default function ConversationsPage() {
     refetchInterval: 10000, // 10초마다 새로고침
   })
 
+  // 전체 읽지 않은 메시지 수
+  const { data: unreadCount } = useQuery({
+    queryKey: ['conversations-unread-count'],
+    queryFn: () => api.get('/conversations/unread-count'),
+    refetchInterval: 10000,
+  })
+
   const markAsReadMutation = useMutation({
     mutationFn: (chzzkChannelId: string) =>
       api.post(`/conversations/${chzzkChannelId}/read`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      queryClient.invalidateQueries({ queryKey: ['conversations-unread-count'] })
     },
   })
 
@@ -46,7 +54,14 @@ export default function ConversationsPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">대화방</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">대화방</h1>
+            {unreadCount?.data?.unreadCount > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold">
+                {unreadCount.data.unreadCount}
+              </span>
+            )}
+          </div>
           <Link
             href="/app/search"
             className="px-4 py-2 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 text-sm"

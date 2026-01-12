@@ -206,6 +206,70 @@ export const mockApiResponses = {
   '/channels/:id/follow-status': () => ({
     data: { isFollowing: false },
   }),
+  '/conversations/unread-count': () => {
+    // 개발 모드: 전체 읽지 않은 메시지 수
+    const totalUnread = mockConversations.reduce((sum, conv) => {
+      return sum + parseInt(conv.unread_count || '0')
+    }, 0)
+    return {
+      data: { unreadCount: totalUnread },
+    }
+  },
+  '/creator/inbox/unread-count': (chzzkChannelId: string) => {
+    // 개발 모드: 특정 채널의 읽지 않은 DM 수
+    return {
+      data: { unreadCount: mockDms.length },
+    }
+  },
+  '/donations/:intentId/complete': (intentId: string, message: string) => {
+    // 개발 모드: 후원 완료 후 메시지 등록
+    // 실제로는 후원 상태를 OCCURRED로 변경하고 메시지를 공개 피드에 추가
+    return {
+      data: {
+        success: true,
+        donation: {
+          id: `donation_${intentId}`,
+          intentId,
+          status: 'OCCURRED',
+          message: {
+            id: `msg_${Date.now()}`,
+            content: message,
+            type: 'donation',
+            visibility: 'public',
+          },
+        },
+      },
+    }
+  },
+  '/profile': (displayName?: string) => {
+    // 개발 모드: 프로필 업데이트
+    if (typeof window !== 'undefined' && displayName) {
+      const Cookies = require('js-cookie').default
+      Cookies.set('mock_user_name', displayName, { path: '/' })
+    }
+    return {
+      data: {
+        success: true,
+        user: {
+          display_name: displayName,
+        },
+      },
+    }
+  },
+  '/auth/logout': () => {
+    // 개발 모드: 로그아웃
+    if (typeof window !== 'undefined') {
+      const Cookies = require('js-cookie').default
+      Cookies.remove('melt_session', { path: '/' })
+      Cookies.remove('mock_user_id', { path: '/' })
+      Cookies.remove('mock_user_role', { path: '/' })
+      Cookies.remove('mock_user_name', { path: '/' })
+      Cookies.remove('mock_onboarding_complete', { path: '/' })
+    }
+    return {
+      data: { success: true },
+    }
+  },
   '/onboarding/status': () => {
     // 개발 모드: 쿠키에서 온보딩 상태 확인
     if (typeof window !== 'undefined') {

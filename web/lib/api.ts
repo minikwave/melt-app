@@ -227,6 +227,44 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     return { data: { success: true } }
   }
 
+  // /conversations/unread-count - 전체 읽지 않은 메시지 수
+  if (url === '/conversations/unread-count' || url.startsWith('/conversations/unread-count')) {
+    const handler = mockApiResponses['/conversations/unread-count']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /creator/inbox/unread-count - 크리에이터 읽지 않은 DM 수
+  if (url === '/creator/inbox/unread-count' || url.startsWith('/creator/inbox/unread-count')) {
+    const handler = mockApiResponses['/creator/inbox/unread-count']
+    const chzzkChannelId = params?.chzzkChannelId || 'channel_creator_1'
+    return typeof handler === 'function' ? handler(chzzkChannelId) : handler
+  }
+
+  // /donations/:intentId/complete - 후원 완료 후 메시지 등록
+  if (url.match(/\/donations\/[^/]+\/complete/)) {
+    const handler = mockApiResponses['/donations/:intentId/complete']
+    if (handler && typeof handler === 'function') {
+      const intentId = url.split('/')[2] || data?.intentId
+      const message = data?.message || ''
+      return handler(intentId, message)
+    }
+  }
+
+  // /profile - 프로필 업데이트
+  if (url === '/profile' || url.startsWith('/profile')) {
+    const handler = mockApiResponses['/profile']
+    if (handler && typeof handler === 'function') {
+      const displayName = data?.display_name || data?.displayName
+      return handler(displayName)
+    }
+  }
+
+  // /auth/logout - 로그아웃
+  if (url === '/auth/logout' || url.startsWith('/auth/logout')) {
+    const handler = mockApiResponses['/auth/logout']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
   // /conversations/:id/read - 읽음 처리
   if (url.match(/\/conversations\/[^/]+\/read/)) {
     return { data: { success: true } }
