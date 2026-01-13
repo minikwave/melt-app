@@ -4,6 +4,9 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { pool } from '../db/pool';
 import { AuthRequest, authRequired } from '../middleware/auth';
+import { saveState, verifyAndDeleteState } from '../utils/oauthState';
+import { encrypt } from '../utils/encryption';
+import { checkEncryptionKey } from '../utils/encryption';
 
 const router = express.Router();
 
@@ -21,7 +24,8 @@ function createState(): string {
 // 치지직 OAuth 로그인 시작
 router.get('/chzzk/login', (req, res) => {
   const state = createState();
-  // TODO: state를 Redis/세션에 저장 (CSRF 방지)
+  // State 저장 (CSRF 방지)
+  saveState(state);
   
   const authorizeUrl = new URL('https://chzzk.naver.com/account-interlock');
   authorizeUrl.searchParams.set('clientId', process.env.CHZZK_CLIENT_ID!);
@@ -36,7 +40,15 @@ router.get('/chzzk/callback', async (req, res) => {
   const { code, state } = req.query as { code?: string; state?: string };
 
   if (!code || !state) {
-    return res.status(400).send('Missing code or state');
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/auth/chzzk/callback?error=missing_params`);
+  }
+
+  // State 검증 (CSRF 방지)
+  if (!verifyAndDeleteState(state)) {
+    console.error('Invalid or expired OAuth state:', state);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    return res.redirect(`${frontendUrl}/auth/chzzk/callback?error=invalid_state`);
   }
 
   try {
@@ -80,7 +92,10 @@ router.get('/chzzk/callback', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // OAuth 토큰 저장 (실제 운영에서는 암호화 필요)
+    // OAuth 토큰 암호화하여 저장
+    const encryptedAccessToken = encrypt(access_token);
+    const encryptedRefreshToken = refresh_token ? encrypt(refresh_token) : null;
+    
     await pool.query(
       `INSERT INTO oauth_tokens (user_id, access_token, refresh_token, expires_at)
        VALUES ($1, $2, $3, $4)
@@ -92,8 +107,8 @@ router.get('/chzzk/callback', async (req, res) => {
          updated_at = now()`,
       [
         user.id,
-        access_token,
-        refresh_token,
+        encryptedAccessToken,
+        encryptedRefreshToken,
         new Date(Date.now() + expires_in * 1000),
       ]
     );
@@ -130,9 +145,18 @@ router.get('/chzzk/callback', async (req, res) => {
       .redirect(redirectUrl);
   } catch (error: any) {
     console.error('OAuth error:', error?.response?.data || error);
+    
+    // 에러 타입별 처리
+    let errorCode = 'oauth_failed';
+    if (error?.response?.status === 400) {
+      errorCode = 'invalid_code';
+    } else if (error?.response?.status === 401) {
+      errorCode = 'unauthorized';
+    }
+    
     // 에러 시 프론트엔드 에러 페이지로 리다이렉트
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/auth/chzzk/callback?error=oauth_failed`);
+    res.redirect(`${frontendUrl}/auth/chzzk/callback?error=${errorCode}`);
   }
 });
 

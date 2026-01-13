@@ -3,6 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import { pool } from './db/pool';
+import { checkEncryptionKey } from './utils/encryption';
 import authRoutes from './routes/auth';
 import onboardingRoutes from './routes/onboarding';
 import searchRoutes from './routes/search';
@@ -15,6 +16,9 @@ import channelRoutes from './routes/channels';
 import devRoutes from './routes/dev';
 
 dotenv.config();
+
+// 암호화 키 확인
+checkEncryptionKey();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
