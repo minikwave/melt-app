@@ -54,6 +54,9 @@ export default function ConversationsPage() {
       <div className="space-y-4">
         {/* Header */}
         <div className="flex items-center justify-between">
+          <Link href="/app" className="text-neutral-400 hover:text-white">
+            ← 뒤로
+          </Link>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">대화방</h1>
             {unreadCount?.data?.unreadCount > 0 && (
