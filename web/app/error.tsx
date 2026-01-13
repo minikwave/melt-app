@@ -7,6 +7,28 @@ export default function Error({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  // MetaMask 관련 오류는 무시하고 자동으로 리셋
+  const isMetaMaskError = 
+    error.message?.includes('MetaMask') ||
+    error.message?.includes('Failed to connect to MetaMask') ||
+    error.message?.includes('ethereum') ||
+    error.stack?.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+
+  if (isMetaMaskError) {
+    // MetaMask 오류는 자동으로 리셋하고 무시
+    console.warn('MetaMask error caught by Error Boundary, ignoring:', error.message)
+    // 자동으로 리셋 시도
+    setTimeout(() => {
+      try {
+        reset()
+      } catch (e) {
+        // 리셋 실패해도 무시
+      }
+    }, 100)
+    // 빈 화면 반환 (오류 표시 안 함)
+    return null
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="text-center">

@@ -30,8 +30,8 @@ export default function RootLayout({
                   message.toString().includes('MetaMask') ||
                   message.toString().includes('Failed to connect to MetaMask') ||
                   message.toString().includes('ethereum') ||
-                  source && source.includes('metamask') ||
-                  source && source.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                  message.toString().includes('i: Failed to connect to MetaMask') ||
+                  source && (source.includes('metamask') || source.includes('nkbihfbeogaeaoehlefnkodbefgpgknn'))
                 )) {
                   console.warn('MetaMask extension error ignored:', message);
                   return true; // 오류 처리됨
@@ -42,40 +42,57 @@ export default function RootLayout({
                 return false;
               };
 
-              // Promise rejection 처리
-              window.addEventListener('unhandledrejection', (event) => {
+              // Promise rejection 처리 (더 강력하게)
+              const handleRejection = (event) => {
                 const reason = event.reason;
                 if (reason && (
                   (reason.message && (
                     reason.message.includes('MetaMask') ||
                     reason.message.includes('Failed to connect to MetaMask') ||
-                    reason.message.includes('ethereum')
+                    reason.message.includes('ethereum') ||
+                    reason.message.includes('i: Failed to connect to MetaMask')
                   )) ||
                   reason.toString().includes('MetaMask') ||
-                  reason.toString().includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                  reason.toString().includes('nkbihfbeogaeaoehlefnkodbefgpgknn') ||
+                  (reason.stack && reason.stack.includes('nkbihfbeogaeaoehlefnkodbefgpgknn'))
                 )) {
                   console.warn('MetaMask promise rejection ignored:', reason);
                   event.preventDefault();
                   event.stopPropagation();
+                  event.stopImmediatePropagation();
                   return false;
                 }
-              }, true);
+              };
+              
+              // capture phase에서 먼저 처리
+              window.addEventListener('unhandledrejection', handleRejection, true);
+              // bubble phase에서도 처리
+              window.addEventListener('unhandledrejection', handleRejection, false);
 
-              // 일반 에러 이벤트 처리
-              window.addEventListener('error', (event) => {
+              // 일반 에러 이벤트 처리 (더 강력하게)
+              const handleError = (event) => {
                 if (event.message && (
                   event.message.includes('MetaMask') ||
                   event.message.includes('Failed to connect to MetaMask') ||
                   event.message.includes('ethereum') ||
-                  event.filename && event.filename.includes('metamask') ||
-                  event.filename && event.filename.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                  event.message.includes('i: Failed to connect to MetaMask') ||
+                  (event.filename && (
+                    event.filename.includes('metamask') ||
+                    event.filename.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                  ))
                 )) {
                   console.warn('MetaMask error event ignored:', event.message);
                   event.preventDefault();
                   event.stopPropagation();
+                  event.stopImmediatePropagation();
                   return false;
                 }
-              }, true);
+              };
+              
+              // capture phase에서 먼저 처리
+              window.addEventListener('error', handleError, true);
+              // bubble phase에서도 처리
+              window.addEventListener('error', handleError, false);
             })();
           `}
         </Script>

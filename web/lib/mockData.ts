@@ -70,14 +70,19 @@ export const mockMessages = [
     channel_id: 'channel-1',
     author: {
       chzzkUserId: 'creator_1',
+      chzzk_user_id: 'creator_1',
       displayName: '크리에이터1',
+      display_name: '크리에이터1',
     },
     type: 'creator_post',
     visibility: 'public',
-    content: '안녕하세요! 방송 외 시간에도 응원해주셔서 감사합니다!',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    content: '안녕하세요! 방송 외 시간에도 응원해주셔서 감사합니다! 오늘도 좋은 하루 되세요!',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     donationAmount: null,
+    donation_amount: null,
     isRetweet: false,
+    is_retweet: false,
     read: true,
     sent: true,
   },
@@ -86,14 +91,19 @@ export const mockMessages = [
     channel_id: 'channel-1',
     author: {
       chzzkUserId: 'viewer_1',
+      chzzk_user_id: 'viewer_1',
       displayName: '시청자1',
+      display_name: '시청자1',
     },
     type: 'donation',
     visibility: 'public',
-    content: '치즈 10000원과 함께 보내는 응원 메시지!',
+    content: '치즈 10000원과 함께 보내는 응원 메시지! 항상 응원합니다!',
     createdAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
     donationAmount: 10000,
+    donation_amount: 10000,
     isRetweet: false,
+    is_retweet: false,
     read: true,
     sent: true,
   },
@@ -102,14 +112,19 @@ export const mockMessages = [
     channel_id: 'channel-1',
     author: {
       chzzkUserId: 'viewer_2',
+      chzzk_user_id: 'viewer_2',
       displayName: '시청자2',
+      display_name: '시청자2',
     },
     type: 'donation',
     visibility: 'public',
-    content: '항상 응원합니다!',
+    content: '항상 응원합니다! 좋은 방송 감사합니다!',
     createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     donationAmount: 5000,
+    donation_amount: 5000,
     isRetweet: false,
+    is_retweet: false,
     read: false,
     sent: true,
   },
@@ -118,15 +133,62 @@ export const mockMessages = [
     channel_id: 'channel-1',
     author: {
       chzzkUserId: 'viewer_3',
+      chzzk_user_id: 'viewer_3',
       displayName: '시청자3',
+      display_name: '시청자3',
     },
     type: 'retweet',
     visibility: 'public',
-    content: '이 메시지는 크리에이터가 RT한 비공개 메시지입니다!',
+    content: '이 메시지는 크리에이터가 RT한 비공개 메시지입니다! 원래는 비공개였지만 공개되었습니다.',
     createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     donationAmount: null,
+    donation_amount: null,
     isRetweet: true,
+    is_retweet: true,
     read: true,
+    sent: true,
+  },
+  {
+    id: 'msg-5',
+    channel_id: 'channel-1',
+    author: {
+      chzzkUserId: 'creator_1',
+      chzzk_user_id: 'creator_1',
+      displayName: '크리에이터1',
+      display_name: '크리에이터1',
+    },
+    type: 'creator_post',
+    visibility: 'public',
+    content: '오늘도 좋은 하루 되세요! 다음 방송도 기대해주세요!',
+    createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    donationAmount: null,
+    donation_amount: null,
+    isRetweet: false,
+    is_retweet: false,
+    read: true,
+    sent: true,
+  },
+  {
+    id: 'msg-6',
+    channel_id: 'channel-1',
+    author: {
+      chzzkUserId: 'viewer_4',
+      chzzk_user_id: 'viewer_4',
+      displayName: '시청자4',
+      display_name: '시청자4',
+    },
+    type: 'donation',
+    visibility: 'public',
+    content: '치즈 50000원과 함께 보내는 큰 후원입니다! 계속 응원하겠습니다!',
+    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    donationAmount: 50000,
+    donation_amount: 50000,
+    isRetweet: false,
+    is_retweet: false,
+    read: false,
     sent: true,
   },
 ]
@@ -136,11 +198,13 @@ export const mockDms = [
     id: 'dm-1',
     channel_id: 'channel-1',
     author_user_id: 'viewer_1',
+    chzzk_user_id: 'viewer_1',
     display_name: '시청자1',
     type: 'dm',
     visibility: 'private',
-    content: '안녕하세요! 좋은 방송 감사합니다.',
+    content: '안녕하세요! 좋은 방송 감사합니다. 개인적으로 질문이 있어서 메시지 드립니다.',
     created_at: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
     read: false,
     sent: true,
   },
@@ -148,12 +212,42 @@ export const mockDms = [
     id: 'dm-2',
     channel_id: 'channel-1',
     author_user_id: 'viewer_2',
+    chzzk_user_id: 'viewer_2',
     display_name: '시청자2',
     type: 'dm',
     visibility: 'private',
-    content: '다음 방송도 기대하고 있습니다!',
+    content: '다음 방송도 기대하고 있습니다! 혹시 다음 주에 특별한 이벤트가 있나요?',
     created_at: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     read: true,
+    sent: true,
+  },
+  {
+    id: 'dm-3',
+    channel_id: 'channel-1',
+    author_user_id: 'viewer_3',
+    chzzk_user_id: 'viewer_3',
+    display_name: '시청자3',
+    type: 'dm',
+    visibility: 'private',
+    content: '비공개로 질문드립니다. 혹시 다음 방송에서 이런 내용을 다루실 계획이 있으신가요?',
+    created_at: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    read: false,
+    sent: true,
+  },
+  {
+    id: 'dm-4',
+    channel_id: 'channel-1',
+    author_user_id: 'viewer_4',
+    chzzk_user_id: 'viewer_4',
+    display_name: '시청자4',
+    type: 'dm',
+    visibility: 'private',
+    content: '안녕하세요! 제안드리고 싶은 내용이 있어서 비공개로 메시지 드립니다.',
+    created_at: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    read: false,
     sent: true,
   },
 ]
@@ -189,21 +283,48 @@ export const mockApiResponses = {
   }),
   '/feed': (chzzkChannelId: string) => {
     // 채널별 메시지 필터링 (개발 모드에서는 모든 메시지 표시)
-    const channelMessages = mockMessages.filter((msg) => 
-      msg.channel_id === 'channel-1' || chzzkChannelId.includes('channel')
-    )
+    // chzzkChannelId가 'channel_creator_1' 또는 'channel-1' 등이면 해당 채널의 메시지 반환
+    const channelMessages = mockMessages.filter((msg) => {
+      // channel_id가 'channel-1'이거나, chzzkChannelId에 'channel'이 포함되어 있으면 반환
+      if (msg.channel_id === 'channel-1' || chzzkChannelId.includes('channel') || chzzkChannelId.includes('creator')) {
+        return true
+      }
+      // 기본적으로 모든 메시지 반환 (개발 모드)
+      return true
+    })
+    // 시간순으로 정렬 (최신순)
+    const sortedMessages = [...channelMessages].sort((a, b) => {
+      const timeA = new Date(a.createdAt || a.created_at || 0).getTime()
+      const timeB = new Date(b.createdAt || b.created_at || 0).getTime()
+      return timeB - timeA
+    })
     return {
       data: {
-        feed: channelMessages,
+        feed: sortedMessages,
       },
     }
   },
-  '/creator/inbox': (chzzkChannelId: string) => ({
-    data: {
-      dms: mockDms,
-      pendingDonations: mockPendingDonations,
-    },
-  }),
+  '/creator/inbox': (chzzkChannelId: string) => {
+    // 채널별 DM 필터링
+    const channelDms = mockDms.filter((dm) => {
+      if (dm.channel_id === 'channel-1' || chzzkChannelId.includes('channel') || chzzkChannelId.includes('creator')) {
+        return true
+      }
+      return true // 개발 모드에서는 모든 DM 반환
+    })
+    // 시간순으로 정렬 (최신순)
+    const sortedDms = [...channelDms].sort((a, b) => {
+      const timeA = new Date(a.created_at || a.createdAt || 0).getTime()
+      const timeB = new Date(b.created_at || b.createdAt || 0).getTime()
+      return timeB - timeA
+    })
+    return {
+      data: {
+        dms: sortedDms,
+        pendingDonations: mockPendingDonations,
+      },
+    }
+  },
   '/channels/:id': (chzzkChannelId: string) => {
     const channel = mockChannels.find((ch) => ch.chzzk_channel_id === chzzkChannelId)
     return {
@@ -231,8 +352,9 @@ export const mockApiResponses = {
   },
   '/creator/inbox/unread-count': (chzzkChannelId: string) => {
     // 개발 모드: 특정 채널의 읽지 않은 DM 수
+    const unreadDms = mockDms.filter((dm) => !dm.read)
     return {
-      data: { unreadCount: mockDms.length },
+      data: { unreadCount: unreadDms.length },
     }
   },
   '/donations/:intentId/complete': (intentId: string, message: string) => {
