@@ -12,7 +12,15 @@ export default function AppPage() {
   
   const { data: user, isLoading, error } = useQuery({
     queryKey: ['me'],
-    queryFn: () => api.get('/auth/me'),
+    queryFn: async () => {
+      console.log('🔧 AppPage: Fetching /auth/me')
+      const response = await api.get('/auth/me')
+      console.log('🔧 AppPage: /auth/me response:', response)
+      console.log('🔧 AppPage: response.data:', response.data)
+      console.log('🔧 AppPage: response.data.data:', response.data?.data)
+      console.log('🔧 AppPage: response.data.data.user:', response.data?.data?.user)
+      return response
+    },
     retry: false,
   })
 
@@ -56,11 +64,22 @@ export default function AppPage() {
   }
 
   // Mock 모드에서는 유저가 없어도 기본 유저로 표시
-  if (!user?.data?.user) {
+  console.log('🔧 AppPage: user data:', user)
+  console.log('🔧 AppPage: user?.data:', user?.data)
+  console.log('🔧 AppPage: user?.data?.data:', user?.data?.data)
+  console.log('🔧 AppPage: user?.data?.data?.user:', user?.data?.data?.user)
+  console.log('🔧 AppPage: user?.data?.user:', user?.data?.user)
+  
+  // 응답 구조 확인: response.data.data.user 또는 response.data.user
+  const userData = user?.data?.data?.user || user?.data?.user
+  
+  if (!userData) {
+    console.warn('🔧 AppPage: No user data found, checking cookies...')
     // Mock 모드에서 쿠키가 없으면 개발 로그인 페이지로 안내
     if (typeof window !== 'undefined') {
       try {
         const mockUserId = Cookies.get('mock_user_id')
+        console.log('🔧 AppPage: mockUserId from cookie:', mockUserId)
         if (!mockUserId) {
           return (
             <main className="flex min-h-screen items-center justify-center p-4">
@@ -77,7 +96,7 @@ export default function AppPage() {
           )
         }
       } catch (error) {
-        console.error('Cookie read error:', error)
+        console.error('🔧 AppPage: Cookie read error:', error)
         return (
           <main className="flex min-h-screen items-center justify-center p-4">
             <div className="text-center space-y-4">
@@ -100,8 +119,11 @@ export default function AppPage() {
     )
   }
 
-  const currentUser = user.data.user
+  const currentUser = userData
   const isCreator = currentUser.role === 'creator' || currentUser.role === 'admin'
+  
+  console.log('🔧 AppPage: currentUser:', currentUser)
+  console.log('🔧 AppPage: isCreator:', isCreator)
 
   return (
     <main className="min-h-screen p-4">

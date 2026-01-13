@@ -143,47 +143,67 @@ function getMockResponse(url: string, params?: any, data?: any): any {
   
   // /auth/me - 쿠키에서 더미 유저 정보 읽기
   if (url === '/auth/me' || url.startsWith('/auth/me')) {
+    console.log('🔧 Mock: /auth/me called')
+    
     if (typeof window !== 'undefined') {
       try {
         const mockUserId = Cookies.get('mock_user_id')
         const mockUserRole = Cookies.get('mock_user_role') || 'viewer'
         const mockUserName = Cookies.get('mock_user_name') || '테스트 유저'
+        const onboardingComplete = Cookies.get('mock_onboarding_complete') === 'true'
+        
+        console.log('🔧 Mock: /auth/me cookies:', {
+          mockUserId,
+          mockUserRole,
+          mockUserName,
+          onboardingComplete,
+        })
         
         // 쿠키가 있으면 쿠키 값 사용, 없으면 기본값 사용
-        if (mockUserId) {
-          return {
-            data: {
-              user: {
-                id: `mock_${mockUserId}`,
-                chzzk_user_id: mockUserId,
-                display_name: mockUserName,
-                role: mockUserRole,
-                onboarding_complete: Cookies.get('mock_onboarding_complete') === 'true',
-              }
-            }
-          }
-        } else {
-          // 쿠키가 없어도 기본 유저 반환 (로그인하지 않은 상태)
-          return {
-            data: {
-              user: {
-                id: 'mock_default',
-                chzzk_user_id: 'viewer_1',
-                display_name: '테스트 유저',
-                role: 'viewer',
-                onboarding_complete: false,
-              }
+        const userData = {
+          id: mockUserId ? `mock_${mockUserId}` : 'mock_default',
+          chzzk_user_id: mockUserId || 'viewer_1',
+          display_name: mockUserName,
+          role: mockUserRole,
+          onboarding_complete: onboardingComplete,
+          profile_image: null as string | null,
+          bio: null as string | null,
+        }
+        
+        const response = {
+          data: {
+            user: userData,
+          },
+        }
+        
+        console.log('🔧 Mock: /auth/me response:', response)
+        return response
+      } catch (e) {
+        // 쿠키 읽기 실패 시 기본값 사용
+        console.error('🔧 Mock: Cookie read error:', e)
+        const fallbackResponse = {
+          data: {
+            user: {
+              id: 'mock_default',
+              chzzk_user_id: 'viewer_1',
+              display_name: '테스트 유저',
+              role: 'viewer',
+              onboarding_complete: false,
+              profile_image: null as string | null,
+              bio: null as string | null,
             }
           }
         }
-      } catch (e) {
-        // 쿠키 읽기 실패 시 기본값 사용
-        console.error('Cookie read error:', e)
+        console.log('🔧 Mock: /auth/me fallback response:', fallbackResponse)
+        return fallbackResponse
       }
     }
     // 서버 사이드에서는 기본 Mock 데이터 사용
+    console.log('🔧 Mock: /auth/me server-side, using default mock data')
     const handler = mockApiResponses['/auth/me']
-    return typeof handler === 'function' ? handler() : handler
+    const serverResponse = typeof handler === 'function' ? handler() : handler
+    console.log('🔧 Mock: /auth/me server-side response:', serverResponse)
+    return serverResponse
   }
 
   // /conversations
