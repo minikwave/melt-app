@@ -13,6 +13,10 @@ const nextConfig = {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
   },
+  // 개발 모드 최적화
+  devIndicators: {
+    buildActivity: true,
+  },
 }
 
 module.exports = nextConfig
