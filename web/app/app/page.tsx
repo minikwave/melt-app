@@ -130,7 +130,15 @@ export default function AppPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Melt</h1>
+          <div className="flex items-center gap-3">
+            <div className="relative w-12 h-12 flex-shrink-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 via-blue-500 via-green-500 to-yellow-500 rounded-xl transform rotate-6 opacity-80 blur-sm"></div>
+              <div className="relative w-full h-full bg-gradient-to-br from-pink-400 via-purple-400 via-blue-400 via-green-400 to-yellow-400 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-2xl font-bold text-white drop-shadow">M</span>
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 via-blue-400 via-green-400 to-yellow-400 bg-clip-text text-transparent">Melt</h1>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-neutral-400">
               {currentUser.display_name || currentUser.chzzk_user_id}
