@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import Link from 'next/link'
+import Cookies from 'js-cookie'
 
 export default function CreatorSetupPage() {
   const router = useRouter()
@@ -27,8 +28,11 @@ export default function CreatorSetupPage() {
       queryClient.invalidateQueries({ queryKey: ['channel', chzzkChannelId] })
       // 개발 모드: 온보딩 완료 표시
       if (typeof window !== 'undefined') {
-        const Cookies = require('js-cookie').default
-        Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+        try {
+          Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+        } catch (error) {
+          console.error('Cookie set error:', error)
+        }
       }
       if (step < 3) {
         setStep(step + 1)

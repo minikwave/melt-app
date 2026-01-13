@@ -42,13 +42,16 @@ export default function OnboardingPage() {
         
         // 개발 모드: 쿠키 업데이트
         if (typeof window !== 'undefined') {
-          const Cookies = require('js-cookie').default
-          Cookies.set('mock_user_role', role, { path: '/' })
-          Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
-          if (userData?.display_name) {
-            Cookies.set('mock_user_name', userData.display_name, { path: '/' })
+          try {
+            Cookies.set('mock_user_role', role, { path: '/' })
+            Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+            if (userData?.display_name) {
+              Cookies.set('mock_user_name', userData.display_name, { path: '/' })
+            }
+            console.log('🔧 Cookies updated successfully')
+          } catch (error) {
+            console.error('Cookie set error:', error)
           }
-          console.log('🔧 Cookies updated successfully')
         }
         
         if (role === 'creator') {

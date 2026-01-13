@@ -258,8 +258,12 @@ export const mockApiResponses = {
   '/profile': (displayName?: string) => {
     // 개발 모드: 프로필 업데이트
     if (typeof window !== 'undefined' && displayName) {
-      const Cookies = require('js-cookie').default
-      Cookies.set('mock_user_name', displayName, { path: '/' })
+      try {
+        const Cookies = require('js-cookie')
+        Cookies.set('mock_user_name', displayName, { path: '/' })
+      } catch (error) {
+        console.error('Cookie set error in profile update:', error)
+      }
     }
     return {
       data: {
@@ -273,12 +277,16 @@ export const mockApiResponses = {
   '/auth/logout': () => {
     // 개발 모드: 로그아웃
     if (typeof window !== 'undefined') {
-      const Cookies = require('js-cookie').default
-      Cookies.remove('melt_session', { path: '/' })
-      Cookies.remove('mock_user_id', { path: '/' })
-      Cookies.remove('mock_user_role', { path: '/' })
-      Cookies.remove('mock_user_name', { path: '/' })
-      Cookies.remove('mock_onboarding_complete', { path: '/' })
+      try {
+        const Cookies = require('js-cookie')
+        Cookies.remove('melt_session', { path: '/' })
+        Cookies.remove('mock_user_id', { path: '/' })
+        Cookies.remove('mock_user_role', { path: '/' })
+        Cookies.remove('mock_user_name', { path: '/' })
+        Cookies.remove('mock_onboarding_complete', { path: '/' })
+      } catch (error) {
+        console.error('Cookie remove error in logout:', error)
+      }
     }
     return {
       data: { success: true },
@@ -537,7 +545,7 @@ export const mockApiResponses = {
     // 개발 모드: 쿠키에서 온보딩 상태 확인
     if (typeof window !== 'undefined') {
       try {
-        const Cookies = require('js-cookie').default
+        const Cookies = require('js-cookie')
         const mockUserId = Cookies.get('mock_user_id')
         const onboardingComplete = Cookies.get('mock_onboarding_complete') === 'true'
         
@@ -588,7 +596,7 @@ export const mockApiResponses = {
     // 개발 모드: 역할 설정
     if (typeof window !== 'undefined') {
       try {
-        const Cookies = require('js-cookie').default
+        const Cookies = require('js-cookie')
         const mockUserId = Cookies.get('mock_user_id') || (role === 'creator' ? 'creator_1' : 'viewer_1')
         const mockUserName = Cookies.get('mock_user_name') || (role === 'creator' ? '크리에이터' : '시청자')
         const user = role === 'creator' ? { ...mockCreator } : { ...mockUser }
@@ -627,15 +635,21 @@ export const mockApiResponses = {
         }
       }
     }
-    // 서버 사이드
-    return { 
-      data: { 
+    // 서버 사이드에서는 기본값 반환
+    const mockUserId = role === 'creator' ? 'creator_1' : 'viewer_1'
+    const mockUserName = role === 'creator' ? '크리에이터' : '시청자'
+    const user = role === 'creator' ? { ...mockCreator } : { ...mockUser }
+    
+    return {
+      data: {
         user: {
-          ...(role === 'creator' ? mockCreator : mockUser),
+          ...user,
           role,
+          chzzk_user_id: mockUserId,
+          display_name: mockUserName,
           onboarding_complete: true,
-        }
-      } 
+        },
+      },
     }
   },
 }

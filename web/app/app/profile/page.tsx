@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useRef } from 'react'
+import Cookies from 'js-cookie'
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -71,12 +72,15 @@ export default function ProfilePage() {
     onSuccess: () => {
       // 개발 모드: 쿠키 정리
       if (typeof window !== 'undefined') {
-        const Cookies = require('js-cookie').default
-        Cookies.remove('melt_session', { path: '/' })
-        Cookies.remove('mock_user_id', { path: '/' })
-        Cookies.remove('mock_user_role', { path: '/' })
-        Cookies.remove('mock_user_name', { path: '/' })
-        Cookies.remove('mock_onboarding_complete', { path: '/' })
+        try {
+          Cookies.remove('melt_session', { path: '/' })
+          Cookies.remove('mock_user_id', { path: '/' })
+          Cookies.remove('mock_user_role', { path: '/' })
+          Cookies.remove('mock_user_name', { path: '/' })
+          Cookies.remove('mock_onboarding_complete', { path: '/' })
+        } catch (error) {
+          console.error('Cookie remove error:', error)
+        }
       }
       router.push('/')
     },

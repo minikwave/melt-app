@@ -5,6 +5,7 @@ import { api } from '@/lib/api'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
+import Cookies from 'js-cookie'
 
 export default function AppPage() {
   const router = useRouter()
@@ -58,9 +59,25 @@ export default function AppPage() {
   if (!user?.data?.user) {
     // Mock 모드에서 쿠키가 없으면 개발 로그인 페이지로 안내
     if (typeof window !== 'undefined') {
-      const Cookies = require('js-cookie').default
-      const mockUserId = Cookies.get('mock_user_id')
-      if (!mockUserId) {
+      try {
+        const mockUserId = Cookies.get('mock_user_id')
+        if (!mockUserId) {
+          return (
+            <main className="flex min-h-screen items-center justify-center p-4">
+              <div className="text-center space-y-4">
+                <p className="text-neutral-400">로그인이 필요합니다</p>
+                <Link
+                  href="/dev/login"
+                  className="inline-block px-6 py-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                >
+                  개발 모드로 로그인
+                </Link>
+              </div>
+            </main>
+          )
+        }
+      } catch (error) {
+        console.error('Cookie read error:', error)
         return (
           <main className="flex min-h-screen items-center justify-center p-4">
             <div className="text-center space-y-4">
