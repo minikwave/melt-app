@@ -222,22 +222,63 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     if (handler && typeof handler === 'function') {
       // POST 요청의 body에서 role 추출
       const role = data?.role || 'viewer'
-      const result = handler(role)
-      // 쿠키 업데이트 (브라우저 환경에서)
-      if (typeof window !== 'undefined' && result?.data?.user) {
-        try {
-          Cookies.set('mock_user_role', role, { path: '/' })
-          Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
-          if (result.data.user.display_name) {
-            Cookies.set('mock_user_name', result.data.user.display_name, { path: '/' })
+      console.log('🔧 Mock: /onboarding/role called with role:', role, 'data:', data)
+      
+      let result
+      try {
+        result = handler(role)
+        console.log('🔧 Mock: /onboarding/role result:', result)
+        
+        // 쿠키 업데이트 (브라우저 환경에서)
+        if (typeof window !== 'undefined' && result?.data?.user) {
+          try {
+            Cookies.set('mock_user_role', role, { path: '/' })
+            Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+            if (result.data.user.display_name) {
+              Cookies.set('mock_user_name', result.data.user.display_name, { path: '/' })
+            }
+            console.log('🔧 Mock: Cookies updated')
+          } catch (e) {
+            console.error('Cookie write error:', e)
           }
-        } catch (e) {
-          console.error('Cookie write error:', e)
+        }
+        
+        // 응답 구조 확인 및 수정
+        if (!result || !result.data || !result.data.user) {
+          console.error('🔧 Mock: Invalid response structure:', result)
+          // 기본 응답 생성
+          result = {
+            data: {
+              user: {
+                id: `mock_${role}_${Date.now()}`,
+                chzzk_user_id: role === 'creator' ? 'creator_1' : 'viewer_1',
+                display_name: role === 'creator' ? '크리에이터' : '시청자',
+                role: role,
+                onboarding_complete: true,
+              }
+            }
+          }
+        }
+        
+        return result
+      } catch (e) {
+        console.error('🔧 Mock: Handler error:', e)
+        // 에러 발생 시 기본 응답
+        return {
+          data: {
+            user: {
+              id: `mock_${role}_${Date.now()}`,
+              chzzk_user_id: role === 'creator' ? 'creator_1' : 'viewer_1',
+              display_name: role === 'creator' ? '크리에이터' : '시청자',
+              role: role,
+              onboarding_complete: true,
+            }
+          }
         }
       }
-      return result
     }
     // 핸들러가 없으면 기본 응답
+    console.warn('🔧 Mock: /onboarding/role handler not found, using default')
     return {
       data: {
         user: {
@@ -245,6 +286,7 @@ function getMockResponse(url: string, params?: any, data?: any): any {
           chzzk_user_id: 'viewer_1',
           display_name: '테스트 유저',
           role: data?.role || 'viewer',
+          onboarding_complete: true,
         }
       }
     }

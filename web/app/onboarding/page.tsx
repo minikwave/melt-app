@@ -17,12 +17,26 @@ export default function OnboardingPage() {
   })
 
   const roleMutation = useMutation({
-    mutationFn: (role: 'viewer' | 'creator') => 
-      api.post('/onboarding/role', { role }),
-    onSuccess: (data) => {
+    mutationFn: (role: 'viewer' | 'creator') => {
+      console.log('🔧 Role mutation called with role:', role)
+      return api.post('/onboarding/role', { role })
+    },
+    onSuccess: (response) => {
+      console.log('🔧 Role mutation success, response:', response)
+      console.log('🔧 Response data:', response.data)
+      console.log('🔧 Response data.data:', response.data?.data)
+      console.log('🔧 Response data.data.user:', response.data?.data?.user)
+      
       try {
-        const role = data.data?.user?.role
+        // 응답 구조 확인: response.data.data.user 또는 response.data.user
+        const userData = response.data?.data?.user || response.data?.user
+        const role = userData?.role
+        
+        console.log('🔧 Extracted userData:', userData)
+        console.log('🔧 Extracted role:', role)
+        
         if (!role) {
+          console.error('🔧 No role found in response:', response)
           throw new Error('역할 정보를 받지 못했습니다.')
         }
         
@@ -31,9 +45,10 @@ export default function OnboardingPage() {
           const Cookies = require('js-cookie').default
           Cookies.set('mock_user_role', role, { path: '/' })
           Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
-          if (data.data?.user?.display_name) {
-            Cookies.set('mock_user_name', data.data.user.display_name, { path: '/' })
+          if (userData?.display_name) {
+            Cookies.set('mock_user_name', userData.display_name, { path: '/' })
           }
+          console.log('🔧 Cookies updated successfully')
         }
         
         if (role === 'creator') {
@@ -42,12 +57,15 @@ export default function OnboardingPage() {
           router.push('/app')
         }
       } catch (error: any) {
-        console.error('Role mutation success handler error:', error)
+        console.error('🔧 Role mutation success handler error:', error)
+        console.error('🔧 Error stack:', error.stack)
         alert(error.message || '역할 설정 후 처리 중 오류가 발생했습니다.')
       }
     },
     onError: (error: any) => {
-      console.error('Role mutation error:', error)
+      console.error('🔧 Role mutation error:', error)
+      console.error('🔧 Error response:', error.response)
+      console.error('🔧 Error data:', error.response?.data)
       alert(error.response?.data?.error || error.message || '역할 설정에 실패했습니다.')
     },
   })
