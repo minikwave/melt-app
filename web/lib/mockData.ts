@@ -6,6 +6,8 @@ export const mockUser = {
   display_name: '테스트 시청자',
   role: 'viewer',
   onboarding_complete: true,
+  profile_image: null as string | null,
+  bio: null as string | null,
 }
 
 export const mockCreator = {
@@ -454,6 +456,43 @@ export const mockApiResponses = {
             content: '신고된 메시지 내용...',
             report_reason: '스팸',
             report_count: 3,
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+          },
+        ],
+      },
+    }
+  },
+  '/contact': (data: any) => {
+    // 개발 모드: 문의 접수
+    return {
+      data: {
+        id: `contact-${Date.now()}`,
+        ...data,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      },
+    }
+  },
+  '/contact/history': () => {
+    // 개발 모드: 문의 내역
+    return {
+      data: {
+        contacts: [
+          {
+            id: 'contact-1',
+            category: 'general',
+            subject: '문의 제목 예시',
+            message: '문의 내용 예시입니다.',
+            status: 'answered',
+            answer: '답변 내용 예시입니다.',
+            created_at: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+          },
+          {
+            id: 'contact-2',
+            category: 'bug',
+            subject: '버그 신고',
+            message: '버그 내용입니다.',
+            status: 'pending',
             created_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
           },
         ],

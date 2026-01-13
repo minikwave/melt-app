@@ -324,6 +324,18 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     return typeof handler === 'function' ? handler() : handler
   }
 
+  // /contact - 문의 접수
+  if (url === '/contact' || url.startsWith('/contact')) {
+    // /contact/history 패턴 체크
+    if (url === '/contact/history' || url.startsWith('/contact/history')) {
+      const handler = mockApiResponses['/contact/history']
+      return typeof handler === 'function' ? handler() : handler
+    }
+    // 일반 문의 접수
+    const handler = mockApiResponses['/contact']
+    return typeof handler === 'function' ? handler(data) : handler
+  }
+
   // /conversations/:id/read - 읽음 처리
   if (url.match(/\/conversations\/[^/]+\/read/)) {
     return { data: { success: true } }

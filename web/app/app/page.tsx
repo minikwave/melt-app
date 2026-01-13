@@ -193,12 +193,18 @@ export default function AppPage() {
         </div>
 
         {/* 프로필 링크 */}
-        <div className="pt-4">
+        <div className="pt-4 space-y-2">
           <Link
             href="/app/profile"
             className="block p-3 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors text-center text-sm"
           >
             프로필 설정
+          </Link>
+          <Link
+            href="/help"
+            className="block p-3 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors text-center text-sm"
+          >
+            도움말
           </Link>
         </div>
       </div>
