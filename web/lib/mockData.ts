@@ -536,20 +536,41 @@ export const mockApiResponses = {
   '/onboarding/status': () => {
     // 개발 모드: 쿠키에서 온보딩 상태 확인
     if (typeof window !== 'undefined') {
-      const mockUserId = document.cookie.split('; ').find(row => row.startsWith('mock_user_id='))?.split('=')[1]
-      const onboardingComplete = document.cookie.split('; ').find(row => row.startsWith('mock_onboarding_complete='))?.split('=')[1] === 'true'
-      
-      if (mockUserId && !onboardingComplete) {
-        const role = document.cookie.split('; ').find(row => row.startsWith('mock_user_role='))?.split('=')[1]
+      try {
+        const Cookies = require('js-cookie').default
+        const mockUserId = Cookies.get('mock_user_id')
+        const onboardingComplete = Cookies.get('mock_onboarding_complete') === 'true'
+        
+        if (mockUserId && !onboardingComplete) {
+          const role = Cookies.get('mock_user_role') || 'viewer'
+          return {
+            data: {
+              needsOnboarding: true,
+              needsCreatorSetup: role === 'creator',
+              onboardingComplete: false,
+            },
+          }
+        }
+        // 온보딩 완료 또는 유저가 없음
         return {
           data: {
-            needsOnboarding: true,
-            needsCreatorSetup: role === 'creator',
-            onboardingComplete: false,
+            needsOnboarding: false,
+            needsCreatorSetup: false,
+            onboardingComplete: true,
+          },
+        }
+      } catch (e) {
+        // 쿠키 읽기 실패 시 기본값
+        return {
+          data: {
+            needsOnboarding: false,
+            needsCreatorSetup: false,
+            onboardingComplete: true,
           },
         }
       }
     }
+    // 서버 사이드
     return {
       data: {
         needsOnboarding: false,

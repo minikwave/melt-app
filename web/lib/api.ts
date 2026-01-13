@@ -149,6 +149,7 @@ function getMockResponse(url: string, params?: any, data?: any): any {
         const mockUserRole = Cookies.get('mock_user_role') || 'viewer'
         const mockUserName = Cookies.get('mock_user_name') || '테스트 유저'
         
+        // 쿠키가 있으면 쿠키 값 사용, 없으면 기본값 사용
         if (mockUserId) {
           return {
             data: {
@@ -157,14 +158,30 @@ function getMockResponse(url: string, params?: any, data?: any): any {
                 chzzk_user_id: mockUserId,
                 display_name: mockUserName,
                 role: mockUserRole,
+                onboarding_complete: Cookies.get('mock_onboarding_complete') === 'true',
+              }
+            }
+          }
+        } else {
+          // 쿠키가 없어도 기본 유저 반환 (로그인하지 않은 상태)
+          return {
+            data: {
+              user: {
+                id: 'mock_default',
+                chzzk_user_id: 'viewer_1',
+                display_name: '테스트 유저',
+                role: 'viewer',
+                onboarding_complete: false,
               }
             }
           }
         }
       } catch (e) {
         // 쿠키 읽기 실패 시 기본값 사용
+        console.error('Cookie read error:', e)
       }
     }
+    // 서버 사이드에서는 기본 Mock 데이터 사용
     const handler = mockApiResponses['/auth/me']
     return typeof handler === 'function' ? handler() : handler
   }
@@ -205,7 +222,31 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     if (handler && typeof handler === 'function') {
       // POST 요청의 body에서 role 추출
       const role = data?.role || 'viewer'
-      return handler(role)
+      const result = handler(role)
+      // 쿠키 업데이트 (브라우저 환경에서)
+      if (typeof window !== 'undefined' && result?.data?.user) {
+        try {
+          Cookies.set('mock_user_role', role, { path: '/' })
+          Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+          if (result.data.user.display_name) {
+            Cookies.set('mock_user_name', result.data.user.display_name, { path: '/' })
+          }
+        } catch (e) {
+          console.error('Cookie write error:', e)
+        }
+      }
+      return result
+    }
+    // 핸들러가 없으면 기본 응답
+    return {
+      data: {
+        user: {
+          id: 'mock_user',
+          chzzk_user_id: 'viewer_1',
+          display_name: '테스트 유저',
+          role: data?.role || 'viewer',
+        }
+      }
     }
   }
 

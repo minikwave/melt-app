@@ -30,8 +30,11 @@ export default function AppPage() {
   })
 
   useEffect(() => {
+    // 에러가 있고 로딩이 완료된 경우에만 리다이렉트
     if (error && !isLoading) {
-      router.push('/auth/naver')
+      // Mock 모드에서는 에러를 무시하고 기본 유저 사용
+      console.warn('Auth error (ignored in mock mode):', error)
+      // Mock 모드에서는 리다이렉트하지 않음
       return
     }
 
@@ -51,8 +54,33 @@ export default function AppPage() {
     )
   }
 
+  // Mock 모드에서는 유저가 없어도 기본 유저로 표시
   if (!user?.data?.user) {
-    return null
+    // Mock 모드에서 쿠키가 없으면 개발 로그인 페이지로 안내
+    if (typeof window !== 'undefined') {
+      const Cookies = require('js-cookie').default
+      const mockUserId = Cookies.get('mock_user_id')
+      if (!mockUserId) {
+        return (
+          <main className="flex min-h-screen items-center justify-center p-4">
+            <div className="text-center space-y-4">
+              <p className="text-neutral-400">로그인이 필요합니다</p>
+              <Link
+                href="/dev/login"
+                className="inline-block px-6 py-3 rounded-xl bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+              >
+                개발 모드로 로그인
+              </Link>
+            </div>
+          </main>
+        )
+      }
+    }
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <div className="text-neutral-400">사용자 정보를 불러오는 중...</div>
+      </main>
+    )
   }
 
   const currentUser = user.data.user
