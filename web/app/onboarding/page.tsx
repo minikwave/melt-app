@@ -20,25 +20,35 @@ export default function OnboardingPage() {
     mutationFn: (role: 'viewer' | 'creator') => 
       api.post('/onboarding/role', { role }),
     onSuccess: (data) => {
-      const role = data.data.user.role
-      // 개발 모드: 쿠키 업데이트
-      if (typeof window !== 'undefined') {
-        const Cookies = require('js-cookie').default
-        Cookies.set('mock_user_role', role, { path: '/' })
-      }
-      if (role === 'creator') {
-        router.push('/onboarding/creator-setup')
-      } else {
-        // 개발 모드: 온보딩 완료 표시
+      try {
+        const role = data.data?.user?.role
+        if (!role) {
+          throw new Error('역할 정보를 받지 못했습니다.')
+        }
+        
+        // 개발 모드: 쿠키 업데이트
         if (typeof window !== 'undefined') {
           const Cookies = require('js-cookie').default
+          Cookies.set('mock_user_role', role, { path: '/' })
           Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+          if (data.data?.user?.display_name) {
+            Cookies.set('mock_user_name', data.data.user.display_name, { path: '/' })
+          }
         }
-        router.push('/app')
+        
+        if (role === 'creator') {
+          router.push('/onboarding/creator-setup')
+        } else {
+          router.push('/app')
+        }
+      } catch (error: any) {
+        console.error('Role mutation success handler error:', error)
+        alert(error.message || '역할 설정 후 처리 중 오류가 발생했습니다.')
       }
     },
     onError: (error: any) => {
-      alert(error.response?.data?.error || '역할 설정에 실패했습니다.')
+      console.error('Role mutation error:', error)
+      alert(error.response?.data?.error || error.message || '역할 설정에 실패했습니다.')
     },
   })
 

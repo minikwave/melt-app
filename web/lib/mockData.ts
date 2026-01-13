@@ -587,21 +587,55 @@ export const mockApiResponses = {
   '/onboarding/role': (role: 'viewer' | 'creator') => {
     // 개발 모드: 역할 설정
     if (typeof window !== 'undefined') {
-      const Cookies = require('js-cookie').default
-      const mockUserId = Cookies.get('mock_user_id')
-      const user = role === 'creator' ? { ...mockCreator } : { ...mockUser }
-      // 쿠키 업데이트
-      Cookies.set('mock_user_role', role, { path: '/' })
-      return {
-        data: {
-          user: {
-            ...user,
-            role,
-            chzzk_user_id: mockUserId || user.chzzk_user_id,
+      try {
+        const Cookies = require('js-cookie').default
+        const mockUserId = Cookies.get('mock_user_id') || (role === 'creator' ? 'creator_1' : 'viewer_1')
+        const mockUserName = Cookies.get('mock_user_name') || (role === 'creator' ? '크리에이터' : '시청자')
+        const user = role === 'creator' ? { ...mockCreator } : { ...mockUser }
+        
+        // 쿠키 업데이트
+        Cookies.set('mock_user_role', role, { path: '/' })
+        Cookies.set('mock_onboarding_complete', 'true', { path: '/' })
+        if (mockUserName) {
+          Cookies.set('mock_user_name', mockUserName, { path: '/' })
+        }
+        
+        return {
+          data: {
+            user: {
+              ...user,
+              role,
+              chzzk_user_id: mockUserId,
+              display_name: mockUserName,
+              onboarding_complete: true,
+            },
           },
-        },
+        }
+      } catch (e) {
+        console.error('Cookie error in onboarding/role:', e)
+        // 에러 발생 시 기본값 반환
+        return {
+          data: {
+            user: {
+              id: `mock_${role}_${Date.now()}`,
+              chzzk_user_id: role === 'creator' ? 'creator_1' : 'viewer_1',
+              display_name: role === 'creator' ? '크리에이터' : '시청자',
+              role,
+              onboarding_complete: true,
+            },
+          },
+        }
       }
     }
-    return { data: { user: role === 'creator' ? mockCreator : mockUser } }
+    // 서버 사이드
+    return { 
+      data: { 
+        user: {
+          ...(role === 'creator' ? mockCreator : mockUser),
+          role,
+          onboarding_complete: true,
+        }
+      } 
+    }
   },
 }
