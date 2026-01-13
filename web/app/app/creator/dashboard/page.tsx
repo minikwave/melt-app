@@ -3,11 +3,29 @@
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function CreatorDashboard() {
+  const router = useRouter()
   const [selectedChannel, setSelectedChannel] = useState<string>('channel_creator_1')
   const [period, setPeriod] = useState<'day' | 'week' | 'month'>('week')
+
+  // 사용자 정보 확인
+  const { data: user, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get('/auth/me'),
+  })
+
+  // 크리에이터가 아니면 리다이렉트
+  useEffect(() => {
+    if (!isLoadingUser && user?.data) {
+      const userData = user.data.data?.user || user.data.user
+      if (userData && userData.role !== 'creator' && userData.role !== 'admin') {
+        router.push('/app')
+      }
+    }
+  }, [user, isLoadingUser, router])
 
   const { data: inbox } = useQuery({
     queryKey: ['creator-inbox', selectedChannel],
@@ -25,10 +43,36 @@ export default function CreatorDashboard() {
     enabled: !!selectedChannel,
   })
 
+  if (isLoadingUser) {
+    return (
+      <main className="min-h-screen p-4">
+        <div className="text-center text-neutral-400 py-8">로딩 중...</div>
+      </main>
+    )
+  }
+
+  const userData = user?.data?.data?.user || user?.data?.user
+  if (!userData || (userData.role !== 'creator' && userData.role !== 'admin')) {
+    return (
+      <main className="min-h-screen p-4">
+        <div className="text-center text-neutral-400 py-8">
+          크리에이터만 접근할 수 있습니다.
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen p-4">
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold">크리에이터 대시보드</h1>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <Link href="/app" className="text-neutral-400 hover:text-white">
+            ← 뒤로
+          </Link>
+          <h1 className="text-2xl font-bold">크리에이터 대시보드</h1>
+          <div className="w-8" />
+        </div>
 
         <div className="space-y-4">
           <div className="flex gap-2">

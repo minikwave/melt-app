@@ -14,11 +14,27 @@ export default function CreatorSettingsPage() {
   const [donateUrl, setDonateUrl] = useState('')
   const [chargeUrl, setChargeUrl] = useState('https://game.naver.com/profile#cash')
 
+  // 사용자 정보 확인
+  const { data: user, isLoading: isLoadingUser } = useQuery({
+    queryKey: ['me'],
+    queryFn: () => api.get('/auth/me'),
+  })
+
   const { data: channel } = useQuery({
     queryKey: ['channel', chzzkChannelId],
     queryFn: () => api.get(`/channels/${chzzkChannelId}`),
     enabled: !!chzzkChannelId,
   })
+
+  // 크리에이터가 아니면 리다이렉트
+  useEffect(() => {
+    if (!isLoadingUser && user?.data) {
+      const userData = user.data.data?.user || user.data.user
+      if (userData && userData.role !== 'creator' && userData.role !== 'admin') {
+        router.push('/app')
+      }
+    }
+  }, [user, isLoadingUser, router])
 
   useEffect(() => {
     if (channel?.data?.channel) {
@@ -52,6 +68,25 @@ export default function CreatorSettingsPage() {
       donateUrl: donateUrl.trim() || undefined,
       chargeUrl: chargeUrl.trim() || undefined,
     })
+  }
+
+  if (isLoadingUser) {
+    return (
+      <main className="min-h-screen p-4">
+        <div className="text-center text-neutral-400 py-8">로딩 중...</div>
+      </main>
+    )
+  }
+
+  const userData = user?.data?.data?.user || user?.data?.user
+  if (!userData || (userData.role !== 'creator' && userData.role !== 'admin')) {
+    return (
+      <main className="min-h-screen p-4">
+        <div className="text-center text-neutral-400 py-8">
+          크리에이터만 접근할 수 있습니다.
+        </div>
+      </main>
+    )
   }
 
   return (

@@ -22,21 +22,61 @@ export default function RootLayout({
         {/* MetaMask 오류 방지 - 브라우저 확장 프로그램 오류 무시 */}
         <Script id="metamask-error-handler" strategy="beforeInteractive">
           {`
-            window.addEventListener('error', (event) => {
-              if (event.message && event.message.includes('MetaMask')) {
-                event.preventDefault();
-                event.stopPropagation();
+            (function() {
+              // MetaMask 관련 오류를 완전히 무시
+              const originalError = window.onerror;
+              window.onerror = function(message, source, lineno, colno, error) {
+                if (message && (
+                  message.toString().includes('MetaMask') ||
+                  message.toString().includes('Failed to connect to MetaMask') ||
+                  message.toString().includes('ethereum') ||
+                  source && source.includes('metamask') ||
+                  source && source.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                )) {
+                  console.warn('MetaMask extension error ignored:', message);
+                  return true; // 오류 처리됨
+                }
+                if (originalError) {
+                  return originalError.apply(this, arguments);
+                }
                 return false;
-              }
-            }, true);
-            
-            window.addEventListener('unhandledrejection', (event) => {
-              if (event.reason && (event.reason.message && event.reason.message.includes('MetaMask') || 
-                  event.reason.toString().includes('MetaMask'))) {
-                event.preventDefault();
-                return false;
-              }
-            });
+              };
+
+              // Promise rejection 처리
+              window.addEventListener('unhandledrejection', (event) => {
+                const reason = event.reason;
+                if (reason && (
+                  (reason.message && (
+                    reason.message.includes('MetaMask') ||
+                    reason.message.includes('Failed to connect to MetaMask') ||
+                    reason.message.includes('ethereum')
+                  )) ||
+                  reason.toString().includes('MetaMask') ||
+                  reason.toString().includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                )) {
+                  console.warn('MetaMask promise rejection ignored:', reason);
+                  event.preventDefault();
+                  event.stopPropagation();
+                  return false;
+                }
+              }, true);
+
+              // 일반 에러 이벤트 처리
+              window.addEventListener('error', (event) => {
+                if (event.message && (
+                  event.message.includes('MetaMask') ||
+                  event.message.includes('Failed to connect to MetaMask') ||
+                  event.message.includes('ethereum') ||
+                  event.filename && event.filename.includes('metamask') ||
+                  event.filename && event.filename.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
+                )) {
+                  console.warn('MetaMask error event ignored:', event.message);
+                  event.preventDefault();
+                  event.stopPropagation();
+                  return false;
+                }
+              }, true);
+            })();
           `}
         </Script>
       </head>
