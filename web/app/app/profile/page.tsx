@@ -87,15 +87,17 @@ export default function ProfilePage() {
   })
 
   const handleEdit = () => {
-    if (user?.data?.user) {
-      setDisplayName(user.data.user.display_name || user.data.user.chzzk_user_id)
+    const userData = user?.data?.data?.user || user?.data?.user
+    if (userData) {
+      setDisplayName(userData.display_name || userData.chzzk_user_id)
       setIsEditing(true)
     }
   }
 
   const handleEditBio = () => {
-    if (user?.data?.user) {
-      setBio(user.data.user.bio || '')
+    const userData = user?.data?.data?.user || user?.data?.user
+    if (userData) {
+      setBio(userData.bio || '')
       setIsEditingBio(true)
     }
   }
@@ -139,11 +141,18 @@ export default function ProfilePage() {
     }
   }
 
-  if (!user?.data?.user) {
-    return null
+  // 응답 구조 확인: response.data.data.user 또는 response.data.user
+  const userData = user?.data?.data?.user || user?.data?.user
+
+  if (!userData) {
+    return (
+      <main className="min-h-screen p-4">
+        <div className="text-center text-neutral-400 py-8">로딩 중...</div>
+      </main>
+    )
   }
 
-  const currentUser = user.data.user
+  const currentUser = userData
   const isCreator = currentUser.role === 'creator' || currentUser.role === 'admin'
 
   return (

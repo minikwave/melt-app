@@ -19,22 +19,28 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* MetaMask 오류 방지 - 브라우저 확장 프로그램 오류 무시 */}
-        <Script id="metamask-error-handler" strategy="beforeInteractive">
+        {/* 브라우저 확장 프로그램 오류 완전 차단 (MetaMask 등) */}
+        <Script id="extension-error-blocker" strategy="beforeInteractive">
           {`
             (function() {
-              // MetaMask 관련 오류를 완전히 무시
+              // 모든 확장 프로그램 관련 오류를 완전히 차단
+              const blockPatterns = [
+                'MetaMask', 'metamask', 'ethereum', 'web3',
+                'nkbihfbeogaeaoehlefnkodbefgpgknn',
+                'Failed to connect', 'connect to MetaMask'
+              ];
+              
+              const shouldBlock = (str) => {
+                if (!str) return false;
+                const lowerStr = str.toString().toLowerCase();
+                return blockPatterns.some(pattern => lowerStr.includes(pattern.toLowerCase()));
+              };
+
+              // window.onerror 차단
               const originalError = window.onerror;
               window.onerror = function(message, source, lineno, colno, error) {
-                if (message && (
-                  message.toString().includes('MetaMask') ||
-                  message.toString().includes('Failed to connect to MetaMask') ||
-                  message.toString().includes('ethereum') ||
-                  message.toString().includes('i: Failed to connect to MetaMask') ||
-                  source && (source.includes('metamask') || source.includes('nkbihfbeogaeaoehlefnkodbefgpgknn'))
-                )) {
-                  console.warn('MetaMask extension error ignored:', message);
-                  return true; // 오류 처리됨
+                if (shouldBlock(message) || shouldBlock(source)) {
+                  return true; // 완전히 차단
                 }
                 if (originalError) {
                   return originalError.apply(this, arguments);
@@ -42,57 +48,34 @@ export default function RootLayout({
                 return false;
               };
 
-              // Promise rejection 처리 (더 강력하게)
-              const handleRejection = (event) => {
+              // Promise rejection 차단
+              const blockRejection = (event) => {
                 const reason = event.reason;
                 if (reason && (
-                  (reason.message && (
-                    reason.message.includes('MetaMask') ||
-                    reason.message.includes('Failed to connect to MetaMask') ||
-                    reason.message.includes('ethereum') ||
-                    reason.message.includes('i: Failed to connect to MetaMask')
-                  )) ||
-                  reason.toString().includes('MetaMask') ||
-                  reason.toString().includes('nkbihfbeogaeaoehlefnkodbefgpgknn') ||
-                  (reason.stack && reason.stack.includes('nkbihfbeogaeaoehlefnkodbefgpgknn'))
+                  shouldBlock(reason.message) ||
+                  shouldBlock(reason.toString()) ||
+                  shouldBlock(reason.stack)
                 )) {
-                  console.warn('MetaMask promise rejection ignored:', reason);
                   event.preventDefault();
                   event.stopPropagation();
                   event.stopImmediatePropagation();
                   return false;
                 }
               };
-              
-              // capture phase에서 먼저 처리
-              window.addEventListener('unhandledrejection', handleRejection, true);
-              // bubble phase에서도 처리
-              window.addEventListener('unhandledrejection', handleRejection, false);
+              window.addEventListener('unhandledrejection', blockRejection, true);
+              window.addEventListener('unhandledrejection', blockRejection, false);
 
-              // 일반 에러 이벤트 처리 (더 강력하게)
-              const handleError = (event) => {
-                if (event.message && (
-                  event.message.includes('MetaMask') ||
-                  event.message.includes('Failed to connect to MetaMask') ||
-                  event.message.includes('ethereum') ||
-                  event.message.includes('i: Failed to connect to MetaMask') ||
-                  (event.filename && (
-                    event.filename.includes('metamask') ||
-                    event.filename.includes('nkbihfbeogaeaoehlefnkodbefgpgknn')
-                  ))
-                )) {
-                  console.warn('MetaMask error event ignored:', event.message);
+              // Error 이벤트 차단
+              const blockError = (event) => {
+                if (shouldBlock(event.message) || shouldBlock(event.filename)) {
                   event.preventDefault();
                   event.stopPropagation();
                   event.stopImmediatePropagation();
                   return false;
                 }
               };
-              
-              // capture phase에서 먼저 처리
-              window.addEventListener('error', handleError, true);
-              // bubble phase에서도 처리
-              window.addEventListener('error', handleError, false);
+              window.addEventListener('error', blockError, true);
+              window.addEventListener('error', blockError, false);
             })();
           `}
         </Script>

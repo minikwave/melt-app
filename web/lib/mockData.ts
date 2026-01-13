@@ -50,6 +50,7 @@ export const mockConversations = [
     id: 'conv-1',
     chzzk_channel_id: 'channel_creator_1',
     name: '크리에이터 1의 채널',
+    owner_name: '크리에이터1',
     last_message: '안녕하세요! 방송 외 시간에도 응원해주셔서 감사합니다!',
     last_message_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
     unread_count: '3',
@@ -58,9 +59,19 @@ export const mockConversations = [
     id: 'conv-2',
     chzzk_channel_id: 'channel_creator_2',
     name: '크리에이터 2의 채널',
+    owner_name: '크리에이터2',
     last_message: '오늘도 좋은 하루 되세요!',
     last_message_at: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
     unread_count: '1',
+  },
+  {
+    id: 'conv-3',
+    chzzk_channel_id: 'channel_creator_3',
+    name: '크리에이터 3의 채널',
+    owner_name: '크리에이터3',
+    last_message: '다음 방송도 기대해주세요!',
+    last_message_at: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
+    unread_count: '0',
   },
 ]
 

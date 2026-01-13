@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { api } from '@/lib/api'
 import Link from 'next/link'
 
+const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
+
 export default function DonatePage() {
   const params = useParams()
   const router = useRouter()
@@ -38,8 +40,14 @@ export default function DonatePage() {
       // 후원 딥링크가 있으면 사용, 없으면 채널 페이지로
       const targetUrl = channel?.donate_url || channel?.channel_url || `https://chzzk.naver.com/live/${chzzkChannelId}`
       
-      // 치지직 채널 페이지로 이동 (실제 후원은 치지직에서)
-      window.location.href = targetUrl
+      // Mock 모드에서는 바로 완료 페이지로 이동 (치즈 충전 플로우 간편화)
+      if (FORCE_MOCK_MODE || typeof window === 'undefined' || !window.location.href.includes('localhost:3001')) {
+        // Mock 모드: 치즈 충전 없이 바로 완료 페이지로
+        router.push(`/app/channels/${chzzkChannelId}/donate/complete`)
+      } else {
+        // 실제 모드: 치지직 채널 페이지로 이동
+        window.location.href = targetUrl
+      }
     } catch (error: any) {
       console.error('Donate intent error:', error)
       alert(error.response?.data?.error || '후원 준비 중 오류가 발생했습니다.')
