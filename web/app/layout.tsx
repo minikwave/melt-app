@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Script from 'next/script'
+import Navigation from '@/components/Navigation'
 
 export const metadata: Metadata = {
   title: 'Melt - 방송 외 후원 플랫폼',
@@ -90,9 +91,10 @@ export default function RootLayout({
           {/* Center mobile frame */}
           <div className="relative mx-auto min-h-screen w-full max-w-[460px] bg-neutral-900 shadow-2xl mobile-frame">
             <Providers>
-              <div className="min-h-screen">
+              <div className="min-h-screen pb-20">
                 {children}
               </div>
+              <Navigation />
             </Providers>
           </div>
         </div>

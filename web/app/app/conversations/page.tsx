@@ -12,7 +12,15 @@ export default function ConversationsPage() {
 
   const { data: conversations, isLoading } = useQuery({
     queryKey: ['conversations'],
-    queryFn: () => api.get('/conversations'),
+    queryFn: async () => {
+      console.log('🔧 ConversationsPage: Fetching /conversations')
+      const response = await api.get('/conversations')
+      console.log('🔧 ConversationsPage: /conversations response:', response)
+      console.log('🔧 ConversationsPage: response.data:', response.data)
+      console.log('🔧 ConversationsPage: response.data.data:', response.data?.data)
+      console.log('🔧 ConversationsPage: response.data.data.conversations:', response.data?.data?.conversations)
+      return response
+    },
     refetchInterval: 10000, // 10초마다 새로고침
   })
 
@@ -47,7 +55,9 @@ export default function ConversationsPage() {
     )
   }
 
-  const channels = conversations?.data?.conversations || []
+  // 응답 구조 확인: response.data.data.conversations 또는 response.data.conversations
+  const channels = conversations?.data?.data?.conversations || conversations?.data?.conversations || []
+  console.log('🔧 ConversationsPage: channels:', channels)
 
   return (
     <main className="min-h-screen p-4">

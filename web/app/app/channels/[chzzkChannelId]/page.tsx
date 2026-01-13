@@ -34,7 +34,9 @@ export default function ChannelPage() {
     }
   }, [chzzkChannelId, router])
 
-  const currentUser = user?.data?.user
+  // 응답 구조 확인: response.data.data.user 또는 response.data.user
+  const userData = user?.data?.data?.user || user?.data?.user
+  const currentUser = userData
   const isCreator = currentUser?.role === 'creator' || currentUser?.role === 'admin'
   const queryClient = useQueryClient()
 
@@ -84,25 +86,33 @@ export default function ChannelPage() {
           <div className="w-8" /> {/* Spacer */}
         </div>
         
-        {/* 팔로우 버튼 (시청자만) */}
+        {/* 액션 버튼들 (시청자만) */}
         {!isCreator && (
-          <button
-            onClick={() => {
-              if (followStatus?.data?.isFollowing) {
-                unfollowMutation.mutate()
-              } else {
-                followMutation.mutate()
-              }
-            }}
-            disabled={followMutation.isPending || unfollowMutation.isPending}
-            className={`w-full py-2 rounded-lg text-sm font-semibold transition-colors ${
-              followStatus?.data?.isFollowing
-                ? 'bg-neutral-700 text-white hover:bg-neutral-600'
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            } disabled:opacity-50`}
-          >
-            {followStatus?.data?.isFollowing ? '팔로우 중' : '팔로우'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (followStatus?.data?.isFollowing) {
+                  unfollowMutation.mutate()
+                } else {
+                  followMutation.mutate()
+                }
+              }}
+              disabled={followMutation.isPending || unfollowMutation.isPending}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                followStatus?.data?.isFollowing
+                  ? 'bg-neutral-700 text-white hover:bg-neutral-600'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              } disabled:opacity-50`}
+            >
+              {followStatus?.data?.isFollowing ? '팔로우 중' : '팔로우'}
+            </button>
+            <Link
+              href={`/app/channels/${chzzkChannelId}/donate`}
+              className="flex-1 py-2 rounded-lg text-sm font-semibold bg-[#03C75A] text-white hover:bg-[#02B350] transition-colors text-center"
+            >
+              💰 치즈 보내기
+            </Link>
+          </div>
         )}
       </div>
 

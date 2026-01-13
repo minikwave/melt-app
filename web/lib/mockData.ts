@@ -349,9 +349,13 @@ export const mockApiResponses = {
       },
     }
   },
-  '/channels/:id/follow-status': () => ({
-    data: { isFollowing: false },
-  }),
+  '/channels/:id/follow-status': () => {
+    // Mock 모드: 시청자는 기본적으로 팔로우 상태로 설정 (대화방에 표시되도록)
+    // 실제로는 팔로우한 채널만 conversations에 표시되지만, Mock 모드에서는 모든 채널 표시
+    return {
+      data: { isFollowing: true }, // Mock 모드에서는 팔로우 상태로 표시
+    }
+  },
   '/conversations/unread-count': () => {
     // 개발 모드: 전체 읽지 않은 메시지 수
     const totalUnread = mockConversations.reduce((sum, conv) => {

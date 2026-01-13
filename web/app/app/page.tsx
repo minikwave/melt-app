@@ -164,15 +164,25 @@ export default function AppPage() {
                 href="/app/conversations"
                 className="block w-full rounded-xl py-4 px-4 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors relative"
               >
-                <div className="font-semibold mb-1">대화방</div>
-                <div className="text-sm text-neutral-400">팔로우한 크리에이터와의 대화</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold mb-1">대화방</div>
+                    <div className="text-sm text-neutral-400">팔로우한 크리에이터와의 대화</div>
+                  </div>
+                  <span className="text-2xl">💬</span>
+                </div>
               </Link>
               <Link
                 href="/app/search"
                 className="block w-full rounded-xl py-4 px-4 bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors"
               >
-                <div className="font-semibold mb-1">크리에이터 찾기</div>
-                <div className="text-sm text-neutral-400">검색 및 팔로우</div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-semibold mb-1">크리에이터 찾기</div>
+                    <div className="text-sm text-neutral-400">검색 및 팔로우</div>
+                  </div>
+                  <span className="text-2xl">🔍</span>
+                </div>
               </Link>
             </>
           )}
