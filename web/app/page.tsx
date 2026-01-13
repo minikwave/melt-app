@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
-// 동적 렌더링 강제
-export const dynamic = 'force-dynamic'
+// 정적 생성 허용 (빌드 시 미리 생성)
+// export const dynamic = 'force-dynamic' // 제거하여 정적 생성 허용
 
 export default function Home() {
   return (
