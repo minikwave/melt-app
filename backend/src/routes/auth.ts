@@ -106,6 +106,20 @@ router.get('/chzzk/callback', async (req, res) => {
     );
 
     // 쿠키에 세션 저장
+    // 온보딩 상태 확인 후 적절한 페이지로 리다이렉트
+    const onboardingResult = await pool.query(
+      `SELECT onboarding_complete, role FROM users WHERE id = $1`,
+      [user.id]
+    );
+    
+    const needsOnboarding = !onboardingResult.rows[0]?.onboarding_complete;
+    const userRole = onboardingResult.rows[0]?.role;
+    
+    let redirectUrl = `${process.env.FRONTEND_URL}/app`;
+    if (needsOnboarding) {
+      redirectUrl = `${process.env.FRONTEND_URL}/onboarding`;
+    }
+    
     res
       .cookie('melt_session', appJwt, {
         httpOnly: true,
@@ -113,10 +127,12 @@ router.get('/chzzk/callback', async (req, res) => {
         sameSite: 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
       })
-      .redirect(`${process.env.FRONTEND_URL}/app`);
+      .redirect(redirectUrl);
   } catch (error: any) {
     console.error('OAuth error:', error?.response?.data || error);
-    res.status(500).send('OAuth failed');
+    // 에러 시 프론트엔드 에러 페이지로 리다이렉트
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    res.redirect(`${frontendUrl}/auth/chzzk/callback?error=oauth_failed`);
   }
 });
 

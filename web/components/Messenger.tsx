@@ -130,8 +130,8 @@ export default function Messenger({ chzzkChannelId, currentUserId, isCreator }: 
 function MessageBubble({ message, currentUserId, isCreator }: any) {
   const isMyMessage = message.author?.chzzkUserId === currentUserId || message.author?.chzzk_user_id === currentUserId
   const isCreatorMessage = message.type === 'creator_post' || message.type === 'creator_reply'
-  const isDonationMessage = message.type === 'donation' || message.donationAmount
-  const isRetweetMessage = message.isRetweet || message.type === 'retweet'
+  const isDonationMessage = message.type === 'donation' || message.donationAmount || message.donation_amount
+  const isRetweetMessage = message.isRetweet || message.is_retweet || message.type === 'retweet'
   const isRead = message.read !== false // 기본값은 true
   const isSent = message.sent !== false // 기본값은 true
   
@@ -148,7 +148,7 @@ function MessageBubble({ message, currentUserId, isCreator }: any) {
   } else if (isDonationMessage && !isRetweetMessage) {
     // 전체공개 시청자 메시지(치즈)
     bubbleStyle = 'bg-green-500/20 border border-green-500/30'
-    badgeText = `치즈 ${message.donationAmount?.toLocaleString() || 0}원`
+    badgeText = `치즈 ${(message.donationAmount || message.donation_amount || 0).toLocaleString()}원`
     badgeColor = 'bg-green-500/30 text-green-300'
   } else if (isRetweetMessage) {
     // 전체공개 시청자 메시지(크리에이터 RT)
