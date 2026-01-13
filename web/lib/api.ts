@@ -8,12 +8,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
 
 // 백엔드 서버 연결 확인 (강제 모드가 아닐 때만)
-let useMockData = FORCE_MOCK_MODE
-if (!FORCE_MOCK_MODE && typeof window !== 'undefined') {
-  // 브라우저에서만 체크
-  checkBackendConnection()
-} else if (FORCE_MOCK_MODE) {
+// 기본값을 true로 설정하여 Mock 모드를 기본으로 사용 (백엔드가 없을 때를 대비)
+let useMockData = FORCE_MOCK_MODE || true // 기본적으로 Mock 모드 사용
+
+if (FORCE_MOCK_MODE) {
   console.log('🔧 Mock data mode FORCED (no backend check)')
+} else if (typeof window !== 'undefined') {
+  // 브라우저에서만 체크 (비동기로 실행)
+  // 백엔드가 있으면 자동으로 전환됨
+  checkBackendConnection()
+} else {
+  // 서버 사이드에서는 기본적으로 Mock 모드 사용
+  console.log('🔧 Mock data mode enabled by default (server-side)')
 }
 
 async function checkBackendConnection() {
@@ -27,7 +33,18 @@ async function checkBackendConnection() {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
-    useMockData = !response.ok
+    if (response.ok) {
+      // 백엔드가 정상 작동하면 Mock 모드 비활성화
+      useMockData = false
+      if (typeof window !== 'undefined') {
+        console.log('🔧 Backend available, using real API')
+      }
+    } else {
+      useMockData = true
+      if (typeof window !== 'undefined') {
+        console.log('🔧 Backend not available, using mock data')
+      }
+    }
   } catch (error) {
     // 서버가 없거나 연결 실패 시 더미 데이터 사용
     useMockData = true
