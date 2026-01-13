@@ -9,9 +9,11 @@ const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
 
 // 백엔드 서버 연결 확인 (강제 모드가 아닐 때만)
 // 기본값을 true로 설정하여 Mock 모드를 기본으로 사용 (백엔드가 없을 때를 대비)
-let useMockData = FORCE_MOCK_MODE || true // 기본적으로 Mock 모드 사용
+// 백엔드가 확인되면 자동으로 false로 변경됨
+let useMockData = true // 기본적으로 Mock 모드 사용
 
 if (FORCE_MOCK_MODE) {
+  useMockData = true
   console.log('🔧 Mock data mode FORCED (no backend check)')
 } else if (typeof window !== 'undefined') {
   // 브라우저에서만 체크 (비동기로 실행)
