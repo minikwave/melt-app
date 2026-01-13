@@ -14,6 +14,21 @@ dist/
 out/
 
 # Environment variables
+# Backend
+backend/.env
+backend/.env.local
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+
+# Frontend
+web/.env
+web/.env.local
+web/.env.development.local
+web/.env.test.local
+web/.env.production.local
+
+# Root level (if any)
 .env
 .env.local
 .env.development.local
