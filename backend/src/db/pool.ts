@@ -1,7 +1,11 @@
 import { Pool, PoolConfig } from 'pg';
 import dotenv from 'dotenv';
+import dns from 'dns';
 
 dotenv.config();
+
+// IPv4를 우선하도록 DNS 설정
+dns.setDefaultResultOrder('ipv4first');
 
 // DATABASE_URL 파싱 및 연결 설정
 let databaseUrl = process.env.DATABASE_URL || '';
@@ -39,10 +43,13 @@ if (databaseUrl && databaseUrl.startsWith('postgresql://')) {
       if (!url.searchParams.has('sslmode')) {
         url.searchParams.set('sslmode', 'require');
       }
-      // IPv4 강제 (IPv6 연결 문제 해결)
-      if (url.hostname.includes('supabase.co')) {
-        // Supabase의 경우 IPv4를 강제하기 위해 호스트명을 그대로 사용
-        // pg 라이브러리가 자동으로 IPv4를 선택하도록 함
+      
+      // IPv6 연결 문제 해결: Supabase Connection Pooling 사용 권장
+      // 또는 호스트명을 IPv4로 해석하도록 설정
+      if (url.hostname.includes('supabase.co') && url.port === '5432') {
+        // Direct connection (포트 5432) 대신 Pooling 사용 권장
+        // 하지만 일단 IPv4 우선 설정으로 시도
+        console.log('💡 IPv4 연결을 시도합니다. 문제가 계속되면 Supabase Connection Pooling 사용을 권장합니다.');
       }
     } else {
       // 개발 환경: SSL 비활성화
