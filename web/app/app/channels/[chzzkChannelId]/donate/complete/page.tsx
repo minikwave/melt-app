@@ -13,15 +13,11 @@ export default function DonateCompletePage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
-    // localStorage에서 메시지 가져오기
-    const savedMessage = localStorage.getItem('melt_donation_message')
+    // localStorage에서 Intent ID 확인
     const intentId = localStorage.getItem('melt_intent_id')
 
-    if (savedMessage) {
-      setMessage(savedMessage)
-    }
-
     if (!intentId) {
+      // Intent ID가 없으면 채널 페이지로 이동
       router.push(`/app/channels/${chzzkChannelId}`)
     }
   }, [chzzkChannelId, router])

@@ -69,9 +69,9 @@ export default function ConversationsPage() {
           </Link>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold">대화방</h1>
-            {unreadCount?.data?.unreadCount > 0 && (
+            {(unreadCount?.data?.data?.totalUnread || unreadCount?.data?.totalUnread || 0) > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-blue-500 text-white text-xs font-semibold">
-                {unreadCount.data.unreadCount}
+                {unreadCount?.data?.data?.totalUnread || unreadCount?.data?.totalUnread || 0}
               </span>
             )}
           </div>

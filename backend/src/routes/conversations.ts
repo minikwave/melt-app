@@ -64,6 +64,53 @@ router.get('/', authRequired, async (req: AuthRequest, res) => {
   }
 });
 
+// 읽지 않은 메시지 수 조회
+router.get('/unread-count', authRequired, async (req: AuthRequest, res) => {
+  try {
+    const userResult = await pool.query(
+      'SELECT id FROM users WHERE chzzk_user_id = $1',
+      [req.user?.sub]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+
+    // 팔로우한 채널들의 읽지 않은 공개 메시지 수 집계
+    const result = await pool.query(
+      `SELECT 
+        COUNT(*) as total_unread,
+        COUNT(DISTINCT c.id) as channels_with_unread
+       FROM user_follows uf
+       JOIN channels c ON uf.channel_id = c.id
+       JOIN messages m ON m.channel_id = c.id
+       WHERE uf.user_id = $1
+         AND m.visibility = 'public'
+         AND m.created_at > COALESCE(
+           (SELECT MAX(read_at) FROM message_reads mr
+            WHERE mr.user_id = $1
+              AND mr.message_id IN (SELECT id FROM messages WHERE channel_id = c.id)),
+           '1970-01-01'::timestamptz
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM message_reads mr
+           WHERE mr.message_id = m.id AND mr.user_id = $1
+         )`,
+      [userId]
+    );
+
+    res.json({
+      totalUnread: parseInt(result.rows[0].total_unread) || 0,
+      channelsWithUnread: parseInt(result.rows[0].channels_with_unread) || 0,
+    });
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    res.status(500).json({ error: 'Failed to get unread count' });
+  }
+});
+
 // 메시지 읽음 처리
 router.post('/:chzzkChannelId/read', authRequired, async (req: AuthRequest, res) => {
   try {

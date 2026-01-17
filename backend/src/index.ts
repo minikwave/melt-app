@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import { pool } from './db/pool';
+import { pool, testConnection } from './db/pool';
 import { checkEncryptionKey } from './utils/encryption';
 import authRoutes from './routes/auth';
 import onboardingRoutes from './routes/onboarding';
@@ -13,6 +13,7 @@ import messageRoutes from './routes/messages';
 import feedRoutes from './routes/feed';
 import creatorRoutes from './routes/creator';
 import channelRoutes from './routes/channels';
+import profileRoutes from './routes/profile';
 import devRoutes from './routes/dev';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/donations', donationRoutes);
 app.use('/messages', messageRoutes);
 app.use('/feed', feedRoutes);
 app.use('/creator', creatorRoutes);
+app.use('/profile', profileRoutes);
 app.use('/dev', devRoutes);
 
 // Error handler
@@ -62,15 +64,10 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 // Start server even if database connection fails
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Melt API server running on port ${PORT}`);
   console.log(`📝 Health check: http://localhost:${PORT}/health`);
   
-  // Test database connection
-  pool.query('SELECT 1')
-    .then(() => console.log('✅ Database connected'))
-    .catch((err) => {
-      console.error('⚠️  Database connection failed:', err.message);
-      console.error('💡 Please set up PostgreSQL database. See QUICK_START_WINDOWS.md');
-    });
+  // Test database connection with improved error handling
+  await testConnection();
 });

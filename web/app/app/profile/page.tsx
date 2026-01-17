@@ -24,16 +24,18 @@ export default function ProfilePage() {
   })
 
   const updateProfileMutation = useMutation({
-    mutationFn: (data: { display_name?: string; bio?: string }) =>
+    mutationFn: (data: { display_name?: string; bio?: string; profile_image?: string }) =>
       api.put('/profile', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['me'] })
       setIsEditing(false)
       setIsEditingBio(false)
+      setIsUploadingImage(false)
       alert('프로필이 업데이트되었습니다.')
     },
     onError: (error: any) => {
       alert(error.response?.data?.error || '프로필 업데이트에 실패했습니다.')
+      setIsUploadingImage(false)
     },
   })
 
@@ -57,9 +59,13 @@ export default function ProfilePage() {
       })
     },
     onSuccess: (response) => {
-      const imageUrl = response.data.imageUrl
-      updateProfileMutation.mutate({ profile_image: imageUrl })
-      setIsUploadingImage(false)
+      const imageUrl = response.data?.imageUrl || response.data?.data?.imageUrl
+      if (imageUrl) {
+        updateProfileMutation.mutate({ profile_image: imageUrl })
+      } else {
+        alert('이미지 업로드에 실패했습니다.')
+        setIsUploadingImage(false)
+      }
     },
     onError: (error: any) => {
       alert(error.response?.data?.error || '이미지 업로드에 실패했습니다.')
