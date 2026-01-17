@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { pool } from '../db/pool';
 import { AuthRequest, authRequired } from '../middleware/auth';
 import { saveState, verifyAndDeleteState } from '../utils/oauthState';
