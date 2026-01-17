@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { pool } from '../db/pool';
 import { AuthRequest, authRequired } from '../middleware/auth';
 import { saveState, verifyAndDeleteState } from '../utils/oauthState';
@@ -117,7 +117,7 @@ router.get('/chzzk/callback', async (req, res) => {
     const appJwt = jwt.sign(
       { sub: chzzkUserId, name: displayName, userId: user.id },
       process.env.JWT_SECRET!,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: '7d' }
     );
 
     // 쿠키에 세션 저장
