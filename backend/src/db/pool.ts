@@ -71,8 +71,9 @@ if (databaseUrl && databaseUrl.startsWith('postgresql://')) {
 // SSL 설정
 if (process.env.NODE_ENV === 'production') {
   // 프로덕션: SSL 활성화 (Supabase 필수)
+  // self-signed certificate 오류 방지를 위해 rejectUnauthorized: false 설정
   poolConfig.ssl = {
-    rejectUnauthorized: false, // Supabase 인증서 자동 검증
+    rejectUnauthorized: false, // Supabase 인증서 검증 비활성화
   };
 } else {
   // 개발 환경: SSL 비활성화
@@ -110,6 +111,10 @@ export async function testConnection(): Promise<boolean> {
       console.error('💡 IPv6 연결 문제가 발생했습니다.');
       console.error('💡 DATABASE_URL에 sslmode=require가 포함되어 있는지 확인하세요.');
       console.error('💡 Supabase Network Restrictions에서 모든 IP를 허용했는지 확인하세요.');
+    } else if (error.message.includes('self-signed certificate') || error.message.includes('certificate')) {
+      console.error('💡 SSL 인증서 오류가 발생했습니다.');
+      console.error('💡 rejectUnauthorized: false 설정이 적용되었는지 확인하세요.');
+      console.error('💡 Connection Pooling 사용을 권장합니다 (IPv4 연결 + 인증서 문제 해결).');
     } else if (error.message.includes('does not exist')) {
       console.error('💡 데이터베이스가 존재하는지 확인하세요.');
     }
