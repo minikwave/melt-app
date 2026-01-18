@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   description: '방송이 꺼진 뒤에도 후원이 흐르도록',
 }
 
-// 정적 생성 허용 (빌드 시 미리 생성)
-// export const dynamic = 'force-dynamic' // 제거하여 정적 생성 허용
+// 동적 렌더링 활성화 (React Query 등 클라이언트 컴포넌트 사용)
+export const dynamic = 'force-dynamic'
 
 export default function RootLayout({
   children,

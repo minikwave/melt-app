@@ -23,6 +23,14 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // Webpack alias 설정 (Vercel 빌드 환경 호환성)
+  webpack: (config, { dir }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': dir,
+    }
+    return config
+  },
 }
 
 module.exports = nextConfig
