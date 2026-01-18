@@ -237,7 +237,7 @@ router.get('/inbox/unread-count', authRequired, async (req: AuthRequest, res) =>
     );
 
     if (channelResult.rows.length === 0) {
-      return res.json({ unreadDms: 0, pendingDonations: 0 });
+      return res.json({ unreadDms: 0, pendingDonations: 0, unreadCount: 0 });
     }
 
     const channel = channelResult.rows[0];
@@ -277,9 +277,12 @@ router.get('/inbox/unread-count', authRequired, async (req: AuthRequest, res) =>
       [channelId]
     );
 
+    const unreadDms = parseInt(dmResult.rows[0].count) || 0;
+    const pendingDonations = parseInt(donationResult.rows[0].count) || 0;
     res.json({
-      unreadDms: parseInt(dmResult.rows[0].count) || 0,
-      pendingDonations: parseInt(donationResult.rows[0].count) || 0,
+      unreadDms,
+      pendingDonations,
+      unreadCount: unreadDms + pendingDonations,
     });
   } catch (error) {
     console.error('Get inbox unread count error:', error);

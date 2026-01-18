@@ -63,7 +63,7 @@ export default function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors min-w-[60px] relative ${
+                className={`flex flex-col items-center justify-center px-3 py-3 min-h-[44px] rounded-lg transition-colors min-w-[60px] relative ${
                   isActive ? 'bg-neutral-800 text-white' : 'text-neutral-400 hover:text-white'
                 }`}
               >

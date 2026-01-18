@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../../lib/api'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
+import Link from 'next/link'
 
-// 개발자 모드 활성화 여부
 const DEV_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
 const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
 
@@ -15,11 +13,8 @@ export default function DevLoginPage() {
   const [selectedUserId, setSelectedUserId] = useState('')
   const [accessDenied, setAccessDenied] = useState(false)
 
-  // 개발자 모드가 비활성화되어 있으면 접근 차단
   useEffect(() => {
-    if (!DEV_MODE_ENABLED && !FORCE_MOCK_MODE) {
-      setAccessDenied(true)
-    }
+    if (!DEV_MODE_ENABLED && !FORCE_MOCK_MODE) setAccessDenied(true)
   }, [])
 
   // 더미 유저 목록 (서버 없이도 작동)
@@ -88,7 +83,18 @@ export default function DevLoginPage() {
     }
   }
 
-  // 접근 거부 화면
+  // 프로덕션: 개발자 모드 비허용 (middleware에서 /dev 리다이렉트, 방어적 처리)
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <p className="text-neutral-400">개발자 모드는 개발 환경에서만 사용할 수 있습니다.</p>
+          <Link href="/" className="inline-block px-6 py-3 rounded-xl bg-neutral-700 text-white hover:bg-neutral-600">홈으로</Link>
+        </div>
+      </main>
+    )
+  }
+
   if (accessDenied) {
     return (
       <main className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-b from-neutral-950 to-neutral-900">

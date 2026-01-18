@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Cookies from 'js-cookie'
+import { PageLoading } from '../../../components/LoadingSpinner'
 
 // 개발자 모드 활성화 여부
 const DEV_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
@@ -32,24 +33,23 @@ export default function NaverLoginPage() {
 
   const handleNaverLogin = () => {
     setIsLoading(true)
-    
-    // 강제 Mock 모드일 때만 개발 로그인으로 리다이렉트
-    if (FORCE_MOCK_MODE) {
+
+    // 개발 환경에서만: 강제 Mock 모드일 때 개발 로그인으로
+    if (FORCE_MOCK_MODE && process.env.NODE_ENV !== 'production') {
       router.push('/dev/login')
       return
     }
-    
-    // 프로덕션 환경: 항상 실제 OAuth 진행
-    // Vercel API Route를 통해 치지직 OAuth 진행
-    // (Railway 백엔드가 한국 외 지역이라 치지직 API 호출 시 ECONNRESET 발생)
-    window.location.href = `/api/auth/chzzk/login`
+
+    // Vercel API Route를 통해 치지직 OAuth (redirect 파라미터로 로그인 후 갈 경로 전달)
+    const base = `/api/auth/chzzk/login`
+    const q = redirectTo && redirectTo !== '/app' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''
+    window.location.href = base + q
   }
 
-  // 인증 확인 중일 때 로딩 표시
   if (isCheckingAuth) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900">
-        <div className="text-neutral-400">로딩 중...</div>
+        <PageLoading label="확인 중..." />
       </main>
     )
   }

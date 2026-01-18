@@ -22,6 +22,11 @@ export default function ChzzkCallbackPage() {
         'invalid_state': '보안 검증에 실패했습니다. 다시 시도해주세요.',
         'unauthorized': '인증 정보가 올바르지 않습니다.',
         'missing_params': '필요한 정보가 없습니다.',
+        'config_error': 'OAuth 설정 오류입니다. CHZZK_CLIENT_ID, CHZZK_CLIENT_SECRET을 확인하세요.',
+        'token_exchange_failed': '치지직 인증이 실패했습니다. 다시 시도해주세요.',
+        'user_fetch_failed': '사용자 정보를 가져올 수 없습니다. 다시 시도해주세요.',
+        'no_user_id': '사용자 정보가 올바르지 않습니다.',
+        'backend_error': '서버 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         'connection_error': '치지직 서버에 연결할 수 없습니다.',
         'user_creation_failed': '계정 생성에 실패했습니다. 잠시 후 다시 시도해주세요.',
       }

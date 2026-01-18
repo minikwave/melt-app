@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Cookies from 'js-cookie'
+import { PageLoading } from '../components/LoadingSpinner'
 
 // 개발자 모드 비밀번호는 환경변수에서 가져옴 (프로덕션에서는 설정하지 않으면 비활성화)
 const DEV_MODE_PASSWORD = process.env.NEXT_PUBLIC_DEV_PASSWORD || ''
@@ -64,11 +65,10 @@ export default function Home() {
     setPasswordError('')
   }
 
-  // 인증 확인 중일 때 로딩 표시
   if (isCheckingAuth) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900">
-        <div className="text-neutral-400">로딩 중...</div>
+        <PageLoading label="확인 중..." />
       </main>
     )
   }

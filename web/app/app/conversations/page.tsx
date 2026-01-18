@@ -14,16 +14,8 @@ export default function ConversationsPage() {
 
   const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['conversations'],
-    queryFn: async () => {
-      console.log('🔧 ConversationsPage: Fetching /conversations')
-      const response = await api.get('/conversations')
-      console.log('🔧 ConversationsPage: /conversations response:', response)
-      console.log('🔧 ConversationsPage: response.data:', response.data)
-      console.log('🔧 ConversationsPage: response.data.data:', response.data?.data)
-      console.log('🔧 ConversationsPage: response.data.data.conversations:', response.data?.data?.conversations)
-      return response
-    },
-    refetchInterval: 10000, // 10초마다 새로고침
+    queryFn: () => api.get('/conversations'),
+    refetchInterval: 10000,
   })
 
   // 전체 읽지 않은 메시지 수
@@ -80,8 +72,6 @@ export default function ConversationsPage() {
       </main>
     )
   }
-
-  console.log('🔧 ConversationsPage: channels:', channels)
 
   return (
     <main className="min-h-screen p-4">

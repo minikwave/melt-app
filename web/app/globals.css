@@ -17,6 +17,19 @@ body {
   background: var(--background);
 }
 
+/* 접근성: 포커스 링 (키보드/보조기기) */
+:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+[tabindex="0"]:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 2px;
+}
+
 /* Mobile frame styling for desktop */
 @media (min-width: 768px) {
   .mobile-frame {

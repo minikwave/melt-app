@@ -61,7 +61,7 @@ router.get('/', async (req, res) => {
     let paramIndex = 2;
 
     let query = `
-      SELECT DISTINCT ON (m.id)
+      SELECT
         m.*,
         u.display_name,
         u.chzzk_user_id,
@@ -85,14 +85,12 @@ router.get('/', async (req, res) => {
           m.visibility = 'public'
           OR rt.id IS NOT NULL
           OR (
-            -- 크리에이터가 자신의 방에서 자신이 보낸 비공개 답장도 볼 수 있도록
             $${paramIndex + 1} = true
             AND m.type = 'creator_reply'
             AND m.author_user_id = $${paramIndex}
             AND m.visibility = 'private'
           )
           OR (
-            -- 본인이 보낸 비공개 치즈 후원 메시지는 본인이 볼 수 있도록
             m.type = 'donation'
             AND m.visibility = 'private'
             AND m.author_user_id = $${paramIndex}

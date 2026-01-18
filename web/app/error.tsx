@@ -30,25 +30,26 @@ export default function Error({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">오류가 발생했습니다</h1>
-        <p className="text-neutral-400 mb-8">{error.message || '알 수 없는 오류'}</p>
-        <div className="space-x-4">
+    <main className="flex min-h-screen items-center justify-center p-6">
+      <div className="text-center max-w-sm">
+        <div className="mb-4 text-5xl">⚠️</div>
+        <h1 className="text-xl font-bold mb-2">오류가 발생했습니다</h1>
+        <p className="text-neutral-400 text-sm mb-6">{error.message || '알 수 없는 오류'}</p>
+        <div className="flex flex-col gap-3">
           <button
             onClick={reset}
-            className="px-6 py-3 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors"
+            className="w-full py-3.5 rounded-xl bg-white text-neutral-900 font-semibold hover:bg-neutral-200 transition-colors"
           >
             다시 시도
           </button>
           <a
             href="/"
-            className="inline-block px-6 py-3 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors"
+            className="block w-full py-3.5 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors text-center"
           >
-            홈으로 돌아가기
+            홈으로
           </a>
         </div>
       </div>
-    </div>
+    </main>
   )
 }

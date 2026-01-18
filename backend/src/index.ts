@@ -59,6 +59,7 @@ app.use('/profile', profileRoutes);
 app.use('/badges', badgeRoutes);
 app.use('/dev', devRoutes);
 app.use('/admin', adminRoutes);
+app.use('/notifications', notificationRoutes);
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

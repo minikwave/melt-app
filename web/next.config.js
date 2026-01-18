@@ -1,7 +1,10 @@
 const path = require('path')
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin')
 
-/** @type {import('next').NextConfig} */
+/**
+ * @type {import('next').NextConfig}
+ * 주의: output: 'export' 를 사용하면 app/api/* (route.ts) 서버리스 함수가 제외됩니다. Vercel 배포 시 사용 금지.
+ */
 const nextConfig = {
   reactStrictMode: true,
   typescript: {

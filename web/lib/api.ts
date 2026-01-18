@@ -4,24 +4,20 @@ import { mockApiResponses, mockUser } from './mockData'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
-// 더미 데이터 모드 강제 활성화 옵션
 const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
+const isProduction = process.env.NODE_ENV === 'production'
 
-// 백엔드 서버 연결 확인 (강제 모드가 아닐 때만)
-// 기본값을 true로 설정하여 Mock 모드를 기본으로 사용 (백엔드가 없을 때를 대비)
-// 백엔드가 확인되면 자동으로 false로 변경됨
-let useMockData = true // 기본적으로 Mock 모드 사용
+// 프로덕션: mock 완전 비활성화. 개발에서만 FORCE_MOCK 또는 백엔드 연결 체크로 mock 사용.
+let useMockData = true
 
-if (FORCE_MOCK_MODE) {
+if (isProduction) {
+  useMockData = false
+} else if (FORCE_MOCK_MODE) {
   useMockData = true
-  console.log('🔧 Mock data mode FORCED (no backend check)')
 } else if (typeof window !== 'undefined') {
-  // 브라우저에서만 체크 (비동기로 실행)
-  // 백엔드가 있으면 자동으로 전환됨
   checkBackendConnection()
 } else {
-  // 서버 사이드에서는 기본적으로 Mock 모드 사용
-  console.log('🔧 Mock data mode enabled by default (server-side)')
+  useMockData = true
 }
 
 async function checkBackendConnection() {
@@ -35,24 +31,10 @@ async function checkBackendConnection() {
       signal: controller.signal,
     })
     clearTimeout(timeoutId)
-    if (response.ok) {
-      // 백엔드가 정상 작동하면 Mock 모드 비활성화
-      useMockData = false
-      if (typeof window !== 'undefined') {
-        console.log('🔧 Backend available, using real API')
-      }
-    } else {
-      useMockData = true
-      if (typeof window !== 'undefined') {
-        console.log('🔧 Backend not available, using mock data')
-      }
-    }
-  } catch (error) {
-    // 서버가 없거나 연결 실패 시 더미 데이터 사용
+    if (response.ok) useMockData = false
+    else useMockData = true
+  } catch {
     useMockData = true
-    if (typeof window !== 'undefined') {
-      console.log('🔧 Using mock data mode (backend not available)')
-    }
   }
 }
 
@@ -127,9 +109,10 @@ api.interceptors.response.use(
     }
 
     if (error.response?.status === 401) {
-      // 로그인 페이지로 리다이렉트
       if (typeof window !== 'undefined') {
-        window.location.href = '/auth/login'
+        const path = window.location.pathname || '/app'
+        const to = path && path !== '/' ? `/auth/naver?redirect=${encodeURIComponent(path)}` : '/auth/naver'
+        window.location.href = to
       }
     }
     return Promise.reject(error)

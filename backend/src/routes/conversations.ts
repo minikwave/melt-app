@@ -101,8 +101,10 @@ router.get('/unread-count', authRequired, async (req: AuthRequest, res) => {
       [userId]
     );
 
+    const total = parseInt(result.rows[0].total_unread) || 0;
     res.json({
-      totalUnread: parseInt(result.rows[0].total_unread) || 0,
+      totalUnread: total,
+      unreadCount: total,
       channelsWithUnread: parseInt(result.rows[0].channels_with_unread) || 0,
     });
   } catch (error) {

@@ -7,7 +7,7 @@ const PROTECTED_PATHS = [
   '/onboarding',
 ]
 
-// 인증이 필요 없는 공개 페이지 경로들
+// 인증이 필요 없는 공개 페이지 경로들 (/dev는 프로덕션에서 middleware에서 차단)
 const PUBLIC_PATHS = [
   '/',
   '/auth',
@@ -16,7 +16,7 @@ const PUBLIC_PATHS = [
   '/terms',
   '/privacy',
   '/contact',
-  '/dev/login',
+  '/dev',
 ]
 
 // 로그인한 사용자가 접근하면 안 되는 페이지들 (로그인 페이지 등)
@@ -27,12 +27,17 @@ const AUTH_REDIRECT_PATHS = [
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
   // API 라우트는 그대로 통과
   if (pathname.startsWith('/api')) {
     return NextResponse.next()
   }
-  
+
+  // 프로덕션: /dev/* 접근 차단
+  if (pathname.startsWith('/dev') && process.env.NODE_ENV === 'production') {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
   // 세션 쿠키 확인
   const sessionToken = request.cookies.get('melt_session')?.value
   const isAuthenticated = !!sessionToken

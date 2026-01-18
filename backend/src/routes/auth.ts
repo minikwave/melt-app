@@ -198,8 +198,8 @@ router.get('/chzzk/callback', async (req, res) => {
 // (치지직 API가 한국 외 지역에서 ECONNRESET 발생하므로 Vercel에서 토큰 교환)
 router.post('/chzzk/complete', async (req, res) => {
   try {
-    const { chzzkUserId, displayName, accessToken, refreshToken, expiresIn } = req.body;
-    
+    const { chzzkUserId, displayName, accessToken, refreshToken, expiresIn, redirectPath } = req.body;
+
     if (!chzzkUserId) {
       return res.status(400).json({ error: 'chzzkUserId is required' });
     }
@@ -250,15 +250,19 @@ router.post('/chzzk/complete', async (req, res) => {
       { expiresIn: '7d' }
     );
     
-    // 온보딩 필요 여부 확인
     const needsOnboarding = !user.onboarding_complete && user.role === 'viewer';
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+
     let redirectUrl = `${frontendUrl}/app`;
     if (needsOnboarding) {
       redirectUrl = `${frontendUrl}/onboarding`;
+    } else if (redirectPath && typeof redirectPath === 'string') {
+      const p = redirectPath.trim();
+      if (p.startsWith('/') && !p.includes('//') && p.length < 500) {
+        redirectUrl = `${frontendUrl}${p}`;
+      }
     }
-    
+
     res.json({
       token: appJwt,
       redirectUrl,
