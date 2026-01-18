@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../../lib/api'
 import Link from 'next/link'
 
 export default function OnboardingPage() {

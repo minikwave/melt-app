@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect, useRef } from 'react'
 import MessageInput from './MessageInput'

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../../../../lib/api'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../../../lib/api'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useRef } from 'react'

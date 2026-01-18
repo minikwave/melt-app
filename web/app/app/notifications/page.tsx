@@ -1,7 +1,7 @@
 'use client'
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
+import { api } from '../../../lib/api'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter } from 'next/navigation'

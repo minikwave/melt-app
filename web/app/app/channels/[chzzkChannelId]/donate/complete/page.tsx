@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { api } from '@/lib/api'
+import { api } from '../../../../../../lib/api'
 import Link from 'next/link'
 
 export default function DonateCompletePage() {

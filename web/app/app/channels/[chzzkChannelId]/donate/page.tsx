@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { api } from '@/lib/api'
+import { api } from '../../../../../lib/api'
 import Link from 'next/link'
 
 const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'

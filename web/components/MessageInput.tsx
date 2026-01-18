@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { api } from '@/lib/api'
+import { api } from '../lib/api'
 import { useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 
