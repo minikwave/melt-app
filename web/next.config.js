@@ -27,31 +27,37 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // Webpack alias 설정 (Vercel 빌드 환경 호환성)
-  webpack: (config, { dir }) => {
-    // tsconfig.json의 paths를 사용하여 alias 자동 설정
+  webpack: (config, { dir, defaultLoaders }) => {
+    // 프로젝트 루트 경로 결정
+    // Vercel에서 Root Directory가 'web'으로 설정된 경우, dir은 web 폴더를 가리킴
     const projectRoot = dir ? path.resolve(dir) : path.resolve(__dirname)
     
     // tsconfig-paths-webpack-plugin 사용
+    const tsconfigPath = path.resolve(projectRoot, 'tsconfig.json')
+    const tsconfigPlugin = new TsconfigPathsPlugin({
+      configFile: tsconfigPath,
+      baseUrl: projectRoot,
+      extensions: config.resolve.extensions || ['.js', '.jsx', '.ts', '.tsx', '.json'],
+    })
+    
     if (config.resolve.plugins) {
-      config.resolve.plugins.push(
-        new TsconfigPathsPlugin({
-          configFile: path.resolve(projectRoot, 'tsconfig.json'),
-          baseUrl: projectRoot,
-        })
-      )
+      config.resolve.plugins.push(tsconfigPlugin)
     } else {
-      config.resolve.plugins = [
-        new TsconfigPathsPlugin({
-          configFile: path.resolve(projectRoot, 'tsconfig.json'),
-          baseUrl: projectRoot,
-        }),
-      ]
+      config.resolve.plugins = [tsconfigPlugin]
     }
     
-    // 추가로 직접 alias 설정 (이중 보안)
+    // 직접 alias 설정 (절대 경로)
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': projectRoot,
+    }
+    
+    // resolve.modules에 프로젝트 루트 추가
+    if (!config.resolve.modules) {
+      config.resolve.modules = ['node_modules']
+    }
+    if (!config.resolve.modules.includes(projectRoot)) {
+      config.resolve.modules.unshift(projectRoot)
     }
     
     return config
