@@ -1,3 +1,5 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -25,10 +27,24 @@ const nextConfig = {
   },
   // Webpack alias 설정 (Vercel 빌드 환경 호환성)
   webpack: (config, { dir }) => {
+    // 절대 경로로 alias 설정
+    // Vercel에서 Root Directory가 'web'으로 설정된 경우, dir은 이미 web 폴더를 가리킴
+    const projectRoot = path.resolve(dir || process.cwd())
+    
+    // resolve.modules에 현재 디렉토리 추가
+    if (!config.resolve.modules) {
+      config.resolve.modules = []
+    }
+    if (!config.resolve.modules.includes(projectRoot)) {
+      config.resolve.modules.push(projectRoot)
+    }
+    
+    // alias 설정
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': dir,
+      '@': projectRoot,
     }
+    
     return config
   },
 }
