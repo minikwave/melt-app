@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import Link from 'next/link'
+import Cookies from 'js-cookie'
 
 export default function OnboardingPage() {
   const router = useRouter()

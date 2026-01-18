@@ -1,11 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-
-// 정적 생성 허용 (빌드 시 미리 생성)
-// export const dynamic = 'force-dynamic' // 제거하여 정적 생성 허용
+import Cookies from 'js-cookie'
 
 // 개발자 모드 비밀번호는 환경변수에서 가져옴 (프로덕션에서는 설정하지 않으면 비활성화)
 const DEV_MODE_PASSWORD = process.env.NEXT_PUBLIC_DEV_PASSWORD || ''
@@ -17,6 +15,18 @@ export default function Home() {
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [password, setPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+
+  // 이미 로그인된 사용자인지 확인
+  useEffect(() => {
+    const sessionToken = Cookies.get('melt_session')
+    if (sessionToken) {
+      // 이미 로그인되어 있으면 앱 페이지로 리다이렉트
+      router.push('/app')
+    } else {
+      setIsCheckingAuth(false)
+    }
+  }, [router])
 
   const handleDevModeClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -54,6 +64,15 @@ export default function Home() {
     setPasswordError('')
   }
 
+  // 인증 확인 중일 때 로딩 표시
+  if (isCheckingAuth) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900">
+        <div className="text-neutral-400">로딩 중...</div>
+      </main>
+    )
+  }
+
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-b from-neutral-950 to-neutral-900">
@@ -72,19 +91,47 @@ export default function Home() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-pink-400 via-purple-400 via-blue-400 via-green-400 to-yellow-400 bg-clip-text text-transparent">Melt</h1>
           <p className="text-neutral-400">방송이 꺼진 뒤에도 후원이 흐르도록</p>
           
-          <div className="mt-8 space-y-4">
+          {/* 서비스 소개 카드 */}
+          <div className="bg-neutral-900/50 rounded-2xl p-6 border border-neutral-800 text-left space-y-4">
+            <h2 className="text-lg font-semibold text-center">Melt란?</h2>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🎁</span>
+                <div>
+                  <p className="font-medium text-white">언제든지 후원</p>
+                  <p className="text-neutral-400">방송이 꺼져 있어도 좋아하는 크리에이터에게 후원할 수 있어요</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">💬</span>
+                <div>
+                  <p className="font-medium text-white">비공개 메시지</p>
+                  <p className="text-neutral-400">크리에이터에게 직접 메시지를 보내고 답장을 받을 수 있어요</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="text-2xl">🏆</span>
+                <div>
+                  <p className="font-medium text-white">뱃지 수집</p>
+                  <p className="text-neutral-400">후원 금액에 따라 특별한 뱃지를 획득할 수 있어요</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-3">
             <Link
               href="/auth/naver"
-              className="block w-full rounded-xl py-4 font-bold bg-[#03C75A] text-white text-center hover:bg-[#02B350] transition-colors"
+              className="block w-full rounded-xl py-4 font-bold bg-[#03C75A] text-white text-center hover:bg-[#02B350] transition-colors shadow-lg"
             >
-              네이버로 시작하기
+              치지직 계정으로 시작하기
             </Link>
             
             <Link
               href="/browse"
               className="block w-full rounded-xl py-4 font-bold bg-neutral-800 text-white text-center border border-neutral-700 hover:bg-neutral-700 transition-colors"
             >
-              둘러보기
+              로그인 없이 둘러보기
             </Link>
             
             {DEV_MODE_ENABLED && (
@@ -97,10 +144,16 @@ export default function Home() {
             )}
           </div>
 
-          <div className="pt-8 text-sm text-neutral-500 space-y-2">
-            <p>• 방송 중이 아니어도 후원 가능</p>
-            <p>• 크리에이터와 비공개 메시지</p>
-            <p>• 공개 피드로 소통</p>
+          <div className="pt-4 text-xs text-neutral-500 space-y-1">
+            <p>치지직 계정으로 간편하게 로그인하고</p>
+            <p>방송 외 시간에도 크리에이터와 소통하세요</p>
+          </div>
+          
+          {/* 약관 링크 */}
+          <div className="pt-4 flex justify-center gap-4 text-xs text-neutral-600">
+            <Link href="/terms" className="hover:text-neutral-400 transition-colors">이용약관</Link>
+            <Link href="/privacy" className="hover:text-neutral-400 transition-colors">개인정보처리방침</Link>
+            <Link href="/help" className="hover:text-neutral-400 transition-colors">도움말</Link>
           </div>
         </div>
       </main>
