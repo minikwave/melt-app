@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
 import Script from 'next/script'
-import Navigation from '@/components/Navigation'
+import Navigation from '../components/Navigation'
 
 export const metadata: Metadata = {
   title: 'Melt - 방송 외 후원 플랫폼',

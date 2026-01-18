@@ -26,6 +26,10 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+  // 빌드 캐시 비활성화 (Vercel 빌드 문제 해결)
+  experimental: {
+    forceSwcTransforms: true,
+  },
   // Webpack alias 설정 (Vercel 빌드 환경 호환성)
   webpack: (config, { dir, defaultLoaders }) => {
     // 프로젝트 루트 경로 결정
