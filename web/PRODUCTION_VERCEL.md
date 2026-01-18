@@ -112,11 +112,25 @@ PAGE만 있고 위 항목이 없다면 **Root Directory가 `web`인지** 다시 
 
 ---
 
-## 8. 트러블슈팅
+## 8. npm deprecation 경고, next 보안
+
+- **npm warn deprecated (whatwg-encoding, rimraf, glob, eslint, next 등)**  
+  대부분 **간접 의존성**이라 직접 바꾸기 어렵고, 빌드 실패 원인은 아닙니다.  
+  `next@14.0.4` 보안 이슈는 있지만, 14.2.x로 올리려면 `tsconfig-paths-webpack-plugin` 포함 **전체 `npm install`** 와 호환성 확인이 필요합니다.
+
+- **API가 빌드에 포함되는 조건**  
+  - 빌드가 **끝까지 성공**해야 `app/api/*` 가 Functions로 나갑니다.  
+  - `/404`, `/500` 프리렌더 시 `Html should not be imported outside of pages/_document` 로 실패하면 빌드 전체가 중단되므로, **`pages/_error.tsx`** 로 기본 `_error` 를 덮어써 두었습니다. (next/document 사용 안 함)  
+  - 빌드 성공 시 `Route (app)` 에 `/api/health`, `/api/auth/chzzk/login`, `/api/auth/chzzk/callback` 이 보여야 하고, 배포 후 `https://<도메인>/api/health` 로 확인할 수 있습니다.
+
+---
+
+## 9. 트러블슈팅
 
 - **Functions에 /api가 안 보임**  
   - Root Directory = `web` 인지 확인  
   - `output: 'export'` 가 next.config에 있는지 확인 후 제거  
+  - 빌드 로그에 **`Export encountered errors`** / **`Html should not be imported`** 가 있으면, `pages/_error.tsx` 존재 여부 확인
 
 - **/api/health 404**  
   - Root Directory = `web`  
