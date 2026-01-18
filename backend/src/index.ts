@@ -17,6 +17,7 @@ import profileRoutes from './routes/profile';
 import badgeRoutes from './routes/badges';
 import devRoutes from './routes/dev';
 import adminRoutes from './routes/admin';
+import notificationRoutes from './routes/notifications';
 
 dotenv.config();
 
