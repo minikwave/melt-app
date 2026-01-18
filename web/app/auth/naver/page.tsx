@@ -4,28 +4,25 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
+// 개발자 모드 활성화 여부
+const DEV_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
+// 강제 Mock 모드
+const FORCE_MOCK_MODE = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true'
+
 export default function NaverLoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
-  const [apiUrl, setApiUrl] = useState('')
-
-  useEffect(() => {
-    setApiUrl(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001')
-  }, [])
 
   const handleNaverLogin = () => {
     setIsLoading(true)
-    // 개발 모드 체크
-    const isDevMode = process.env.NEXT_PUBLIC_FORCE_MOCK === 'true' || 
-                      !apiUrl || 
-                      apiUrl.includes('localhost')
     
-    if (isDevMode) {
-      // 개발 모드: 개발 로그인 페이지로 이동
+    // 강제 Mock 모드일 때만 개발 로그인으로 리다이렉트
+    if (FORCE_MOCK_MODE) {
       router.push('/dev/login')
       return
     }
     
+    // 프로덕션 환경: 항상 실제 OAuth 진행
     // Vercel API Route를 통해 치지직 OAuth 진행
     // (Railway 백엔드가 한국 외 지역이라 치지직 API 호출 시 ECONNRESET 발생)
     window.location.href = `/api/auth/chzzk/login`
@@ -64,15 +61,17 @@ export default function NaverLoginPage() {
           <p>• 방송 외 시간에도 후원 가능</p>
         </div>
 
-        {/* 개발 모드 링크 */}
-        <div className="text-center pt-4">
-          <Link
-            href="/dev/login"
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-          >
-            🧪 개발 모드로 테스트하기
-          </Link>
-        </div>
+        {/* 개발 모드 링크 - 개발자 모드가 활성화된 경우에만 표시 */}
+        {DEV_MODE_ENABLED && (
+          <div className="text-center pt-4">
+            <Link
+              href="/dev/login"
+              className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              🧪 개발 모드로 테스트하기
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   )

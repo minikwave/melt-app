@@ -7,7 +7,10 @@ import { useRouter } from 'next/navigation'
 // 정적 생성 허용 (빌드 시 미리 생성)
 // export const dynamic = 'force-dynamic' // 제거하여 정적 생성 허용
 
-const DEV_MODE_PASSWORD = '098765'
+// 개발자 모드 비밀번호는 환경변수에서 가져옴 (프로덕션에서는 설정하지 않으면 비활성화)
+const DEV_MODE_PASSWORD = process.env.NEXT_PUBLIC_DEV_PASSWORD || ''
+// 개발자 모드 활성화 여부 (프로덕션에서는 명시적으로 활성화해야 함)
+const DEV_MODE_ENABLED = process.env.NEXT_PUBLIC_ENABLE_DEV_MODE === 'true' || process.env.NODE_ENV === 'development'
 
 export default function Home() {
   const router = useRouter()
@@ -17,6 +20,19 @@ export default function Home() {
 
   const handleDevModeClick = (e: React.MouseEvent) => {
     e.preventDefault()
+    
+    // 개발자 모드가 비활성화되어 있으면 차단
+    if (!DEV_MODE_ENABLED) {
+      alert('개발자 모드가 비활성화되어 있습니다.')
+      return
+    }
+    
+    // 비밀번호가 설정되지 않았으면 바로 이동 (개발 환경)
+    if (!DEV_MODE_PASSWORD) {
+      router.push('/dev/login')
+      return
+    }
+    
     setShowPasswordModal(true)
     setPassword('')
     setPasswordError('')
@@ -71,12 +87,14 @@ export default function Home() {
               둘러보기
             </Link>
             
-            <button
-              onClick={handleDevModeClick}
-              className="w-full rounded-xl py-4 font-bold bg-blue-600 text-white text-center hover:bg-blue-700 transition-colors"
-            >
-              🧪 개발 모드로 테스트하기
-            </button>
+            {DEV_MODE_ENABLED && (
+              <button
+                onClick={handleDevModeClick}
+                className="w-full rounded-xl py-4 font-bold bg-blue-600 text-white text-center hover:bg-blue-700 transition-colors"
+              >
+                🧪 개발 모드로 테스트하기
+              </button>
+            )}
           </div>
 
           <div className="pt-8 text-sm text-neutral-500 space-y-2">

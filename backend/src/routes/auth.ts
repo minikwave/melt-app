@@ -147,6 +147,12 @@ router.get('/chzzk/callback', async (req, res) => {
     }
     
     res
+      // 실제 OAuth 로그인 시 Mock 쿠키 정리 (충돌 방지)
+      .clearCookie('mock_user_id')
+      .clearCookie('mock_user_role')
+      .clearCookie('mock_user_name')
+      .clearCookie('mock_onboarding_complete')
+      // 실제 세션 쿠키 설정
       .cookie('melt_session', appJwt, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

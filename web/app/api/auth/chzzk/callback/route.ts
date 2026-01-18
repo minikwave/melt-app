@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Node.js runtime 사용
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+  // 현재 요청의 호스트를 기반으로 baseUrl 결정
+  const url = new URL(request.url);
+  const currentHost = `${url.protocol}//${url.host}`;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || currentHost;
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   
+  console.log('🔐 OAuth Callback - code:', code ? 'received' : 'missing');
+  console.log('🔐 OAuth Callback - state:', state ? 'received' : 'missing');
+  console.log('🔐 OAuth Callback - baseUrl:', baseUrl);
+  console.log('🔐 OAuth Callback - backendUrl:', backendUrl);
+  
   if (!code || !state) {
+    console.error('❌ OAuth Callback - Missing params');
     return NextResponse.redirect(`${baseUrl}/auth/chzzk/callback?error=missing_params`);
   }
   
@@ -19,7 +31,15 @@ export async function GET(request: NextRequest) {
     
     const clientId = process.env.CHZZK_CLIENT_ID;
     const clientSecret = process.env.CHZZK_CLIENT_SECRET;
-    const redirectUri = process.env.CHZZK_REDIRECT_URI || `${backendUrl}/auth/chzzk/callback`;
+    
+    // 리다이렉트 URI - 반드시 login에서 사용한 것과 동일해야 함
+    let redirectUri = process.env.CHZZK_REDIRECT_URI;
+    if (!redirectUri) {
+      redirectUri = `${currentHost}/api/auth/chzzk/callback`;
+      console.log('⚠️ CHZZK_REDIRECT_URI not set, using:', redirectUri);
+    }
+    
+    console.log('🔐 OAuth Callback - redirectUri for token exchange:', redirectUri);
     
     if (!clientId || !clientSecret) {
       console.error('Missing CHZZK credentials');
@@ -109,6 +129,12 @@ export async function GET(request: NextRequest) {
     // 4. 쿠키 설정 후 리다이렉트
     const response = NextResponse.redirect(redirectUrl || `${baseUrl}/app`);
     
+    // 실제 OAuth 로그인 시 Mock 쿠키 정리 (충돌 방지)
+    response.cookies.delete('mock_user_id');
+    response.cookies.delete('mock_user_role');
+    response.cookies.delete('mock_user_name');
+    response.cookies.delete('mock_onboarding_complete');
+    
     response.cookies.set('melt_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -116,6 +142,8 @@ export async function GET(request: NextRequest) {
       maxAge: 7 * 24 * 60 * 60, // 7일
       path: '/',
     });
+    
+    console.log('✅ OAuth Callback - Success, redirecting to:', redirectUrl || `${baseUrl}/app`);
     
     return response;
   } catch (error: any) {
