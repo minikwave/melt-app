@@ -5,12 +5,14 @@ import { api } from '../../../lib/api'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
+import Skeleton, { ChannelCardSkeleton } from '../../../components/Skeleton'
+import ErrorDisplay from '../../../components/ErrorDisplay'
 
 export default function ConversationsPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
 
-  const { data: conversations, isLoading } = useQuery({
+  const { data: conversations, isLoading, error, refetch } = useQuery({
     queryKey: ['conversations'],
     queryFn: async () => {
       console.log('🔧 ConversationsPage: Fetching /conversations')
@@ -47,16 +49,38 @@ export default function ConversationsPage() {
     router.push(`/app/channels/${chzzkChannelId}`)
   }
 
+  // 응답 구조 확인: response.data.data.conversations 또는 response.data.conversations
+  const channels = conversations?.data?.data?.conversations || conversations?.data?.conversations || []
+
   if (isLoading) {
     return (
       <main className="min-h-screen p-4">
-        <div className="text-center text-neutral-400 py-8">로딩 중...</div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Skeleton variant="text" width={60} height={24} />
+            <Skeleton variant="text" width={120} height={24} />
+            <Skeleton variant="text" width={80} height={32} />
+          </div>
+          {[1, 2, 3].map((i) => (
+            <ChannelCardSkeleton key={i} />
+          ))}
+        </div>
       </main>
     )
   }
 
-  // 응답 구조 확인: response.data.data.conversations 또는 response.data.conversations
-  const channels = conversations?.data?.data?.conversations || conversations?.data?.conversations || []
+  if (error) {
+    return (
+      <main className="min-h-screen p-4">
+        <ErrorDisplay 
+          error={error as Error} 
+          onRetry={() => refetch()}
+          title="대화방 목록을 불러올 수 없습니다"
+        />
+      </main>
+    )
+  }
+
   console.log('🔧 ConversationsPage: channels:', channels)
 
   return (

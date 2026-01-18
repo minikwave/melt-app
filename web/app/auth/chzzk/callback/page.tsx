@@ -15,9 +15,19 @@ export default function ChzzkCallbackPage() {
 
     if (error) {
       setStatus('error')
-      setMessage('로그인에 실패했습니다. 다시 시도해주세요.')
+      // 에러 타입별 메시지
+      const errorMessages: Record<string, string> = {
+        'oauth_failed': '로그인에 실패했습니다. 다시 시도해주세요.',
+        'invalid_code': '인증 코드가 유효하지 않습니다. 다시 시도해주세요.',
+        'invalid_state': '보안 검증에 실패했습니다. 다시 시도해주세요.',
+        'unauthorized': '인증 정보가 올바르지 않습니다.',
+        'missing_params': '필요한 정보가 없습니다.',
+        'connection_error': '치지직 서버에 연결할 수 없습니다.',
+        'user_creation_failed': '계정 생성에 실패했습니다. 잠시 후 다시 시도해주세요.',
+      }
+      setMessage(errorMessages[error] || `로그인 실패: ${error}`)
       setTimeout(() => {
-        router.push('/auth/naver')
+        router.push('/')
       }, 3000)
       return
     }

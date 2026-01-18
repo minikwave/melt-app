@@ -360,6 +360,16 @@ export default function ProfilePage() {
             </Link>
           )}
 
+          {currentUser.role === 'admin' && (
+            <Link
+              href="/app/admin"
+              className="block p-4 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/20 transition-colors"
+            >
+              <div className="font-semibold text-red-400">관리자 페이지</div>
+              <div className="text-sm text-neutral-400">유저, 채널, 메시지 관리</div>
+            </Link>
+          )}
+
           <Link
             href="/onboarding"
             className="block p-4 rounded-xl bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors"

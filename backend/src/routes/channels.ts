@@ -1,8 +1,12 @@
 import express from 'express';
 import { pool } from '../db/pool';
 import { AuthRequest, authRequired, creatorOnly } from '../middleware/auth';
+import { ChzzkSessionManager } from '../services/chzzkSession';
 
 const router = express.Router();
+
+// 치지직 세션 매니저 인스턴스
+const chzzkSessionManager = ChzzkSessionManager.getInstance();
 
 // 채널 정보 조회
 router.get('/:chzzkChannelId', async (req, res) => {
@@ -10,7 +14,9 @@ router.get('/:chzzkChannelId', async (req, res) => {
     const { chzzkChannelId } = req.params;
 
     const result = await pool.query(
-      `SELECT id, chzzk_channel_id, name, owner_user_id, channel_url, donate_url, charge_url 
+      `SELECT id, chzzk_channel_id, name, owner_user_id, channel_url, donate_url, charge_url,
+              chzzk_session_active, chzzk_session_connected_at,
+              CASE WHEN chzzk_client_id IS NOT NULL THEN true ELSE false END as has_api_credentials
        FROM channels WHERE chzzk_channel_id = $1`,
       [chzzkChannelId]
     );
@@ -44,15 +50,32 @@ router.get('/:chzzkChannelId', async (req, res) => {
   }
 });
 
-// 채널 설정 업데이트 (Creator only)
-router.put('/:chzzkChannelId/settings', authRequired, async (req: AuthRequest, res) => {
+// 치지직 API 자격 증명 설정 (Creator only)
+router.put('/:chzzkChannelId/api-credentials', authRequired, async (req: AuthRequest, res) => {
   try {
     const { chzzkChannelId } = req.params;
-    const { channelUrl, donateUrl, chargeUrl } = req.body;
+    const { nidAuth, nidSession } = req.body;
 
-    // 채널 소유자 확인
+    if (!nidAuth || !nidSession) {
+      return res.status(400).json({ error: 'NID_AUT and NID_SES cookies are required' });
+    }
+
+    // 유저 조회
+    const userResult = await pool.query(
+      'SELECT id, role FROM users WHERE chzzk_user_id = $1',
+      [req.user?.sub]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+    const userRole = userResult.rows[0].role;
+
+    // 채널 조회
     const channelResult = await pool.query(
-      'SELECT owner_user_id FROM channels WHERE chzzk_channel_id = $1',
+      'SELECT id, owner_user_id FROM channels WHERE chzzk_channel_id = $1',
       [chzzkChannelId]
     );
 
@@ -61,16 +84,205 @@ router.put('/:chzzkChannelId/settings', authRequired, async (req: AuthRequest, r
     }
 
     const channel = channelResult.rows[0];
-    
+
     // 소유자 확인
+    if (channel.owner_user_id !== userId && userRole !== 'admin') {
+      return res.status(403).json({ error: 'Not channel owner' });
+    }
+
+    // API 자격 증명 저장 (nidAuth를 client_id에, nidSession을 client_secret에 저장)
+    await pool.query(
+      `UPDATE channels 
+       SET chzzk_client_id = $1, chzzk_client_secret = $2, updated_at = now()
+       WHERE chzzk_channel_id = $3`,
+      [nidAuth, nidSession, chzzkChannelId]
+    );
+
+    // 세션 시작 시도
+    try {
+      await chzzkSessionManager.startSession(chzzkChannelId, nidAuth, nidSession);
+      
+      await pool.query(
+        `UPDATE channels 
+         SET chzzk_session_active = true, chzzk_session_connected_at = now()
+         WHERE chzzk_channel_id = $1`,
+        [chzzkChannelId]
+      );
+
+      res.json({ 
+        ok: true, 
+        message: 'API credentials saved and session started',
+        sessionActive: true
+      });
+    } catch (sessionError: any) {
+      console.error('Failed to start Chzzk session:', sessionError);
+      res.json({ 
+        ok: true, 
+        message: 'API credentials saved but session failed to start',
+        sessionActive: false,
+        sessionError: sessionError.message
+      });
+    }
+  } catch (error) {
+    console.error('Update API credentials error:', error);
+    res.status(500).json({ error: 'Failed to update API credentials' });
+  }
+});
+
+// 치지직 세션 상태 확인
+router.get('/:chzzkChannelId/session-status', authRequired, async (req: AuthRequest, res) => {
+  try {
+    const { chzzkChannelId } = req.params;
+
+    const result = await pool.query(
+      `SELECT chzzk_session_active, chzzk_session_connected_at,
+              CASE WHEN chzzk_client_id IS NOT NULL THEN true ELSE false END as has_credentials
+       FROM channels WHERE chzzk_channel_id = $1`,
+      [chzzkChannelId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+
+    const channel = result.rows[0];
+    const isConnected = chzzkSessionManager.isSessionActive(chzzkChannelId);
+
+    res.json({
+      hasCredentials: channel.has_credentials,
+      sessionActive: isConnected,
+      connectedAt: channel.chzzk_session_connected_at
+    });
+  } catch (error) {
+    console.error('Get session status error:', error);
+    res.status(500).json({ error: 'Failed to get session status' });
+  }
+});
+
+// 치지직 세션 재시작
+router.post('/:chzzkChannelId/restart-session', authRequired, async (req: AuthRequest, res) => {
+  try {
+    const { chzzkChannelId } = req.params;
+
+    // 유저 조회
     const userResult = await pool.query(
       'SELECT id, role FROM users WHERE chzzk_user_id = $1',
       [req.user?.sub]
     );
 
-    if (userResult.rows[0]?.id !== channel.owner_user_id && 
-        userResult.rows[0]?.role !== 'admin') {
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+    const userRole = userResult.rows[0].role;
+
+    // 채널 및 자격 증명 조회
+    const channelResult = await pool.query(
+      'SELECT id, owner_user_id, chzzk_client_id, chzzk_client_secret FROM channels WHERE chzzk_channel_id = $1',
+      [chzzkChannelId]
+    );
+
+    if (channelResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Channel not found' });
+    }
+
+    const channel = channelResult.rows[0];
+
+    // 소유자 확인
+    if (channel.owner_user_id !== userId && userRole !== 'admin') {
       return res.status(403).json({ error: 'Not channel owner' });
+    }
+
+    if (!channel.chzzk_client_id || !channel.chzzk_client_secret) {
+      return res.status(400).json({ error: 'API credentials not configured' });
+    }
+
+    // 세션 재시작
+    await chzzkSessionManager.stopSession(chzzkChannelId);
+    await chzzkSessionManager.startSession(
+      chzzkChannelId, 
+      channel.chzzk_client_id, 
+      channel.chzzk_client_secret
+    );
+
+    await pool.query(
+      `UPDATE channels 
+       SET chzzk_session_active = true, chzzk_session_connected_at = now()
+       WHERE chzzk_channel_id = $1`,
+      [chzzkChannelId]
+    );
+
+    res.json({ ok: true, message: 'Session restarted successfully' });
+  } catch (error) {
+    console.error('Restart session error:', error);
+    res.status(500).json({ error: 'Failed to restart session' });
+  }
+});
+
+// 채널 설정 업데이트 (Creator only)
+router.put('/:chzzkChannelId/settings', authRequired, async (req: AuthRequest, res) => {
+  try {
+    const { chzzkChannelId } = req.params;
+    const { channelUrl, donateUrl, chargeUrl } = req.body;
+
+    // 유저 조회
+    const userResult = await pool.query(
+      'SELECT id, role FROM users WHERE chzzk_user_id = $1',
+      [req.user?.sub]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+    const userRole = userResult.rows[0].role;
+
+    // 채널 조회/생성
+    let channelResult = await pool.query(
+      'SELECT id, owner_user_id FROM channels WHERE chzzk_channel_id = $1',
+      [chzzkChannelId]
+    );
+
+    let channelId: string;
+    let channel: any;
+
+    if (channelResult.rows.length === 0) {
+      // 채널이 없으면 생성 (크리에이터인 경우 owner_user_id 설정)
+      const defaultChannelUrl = channelUrl || `https://chzzk.naver.com/live/${chzzkChannelId}`;
+      const defaultChargeUrl = chargeUrl || 'https://game.naver.com/profile#cash';
+      
+      const insertResult = await pool.query(
+        `INSERT INTO channels (chzzk_channel_id, name, owner_user_id, channel_url, charge_url) 
+         VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+        [
+          chzzkChannelId,
+          chzzkChannelId,
+          userRole === 'creator' ? userId : null, // 크리에이터인 경우 owner 설정
+          defaultChannelUrl,
+          defaultChargeUrl
+        ]
+      );
+      channel = insertResult.rows[0];
+      channelId = channel.id;
+    } else {
+      channel = channelResult.rows[0];
+      channelId = channel.id;
+
+      // owner_user_id가 없고 크리에이터인 경우 설정
+      if (!channel.owner_user_id && userRole === 'creator') {
+        await pool.query(
+          'UPDATE channels SET owner_user_id = $1 WHERE id = $2',
+          [userId, channelId]
+        );
+        channel.owner_user_id = userId;
+      }
+
+      // 소유자 확인 (owner가 있는 경우)
+      if (channel.owner_user_id && channel.owner_user_id !== userId && userRole !== 'admin') {
+        return res.status(403).json({ error: 'Not channel owner' });
+      }
     }
 
     // 업데이트

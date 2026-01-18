@@ -26,9 +26,9 @@ export default function NaverLoginPage() {
       return
     }
     
-    // 네이버 로그인은 백엔드에서 치지직 OAuth로 연결
-    // 실제로는 네이버 로그인 후 치지직 계정 연동 플로우로 진행
-    window.location.href = `${apiUrl}/auth/chzzk/login`
+    // Vercel API Route를 통해 치지직 OAuth 진행
+    // (Railway 백엔드가 한국 외 지역이라 치지직 API 호출 시 ECONNRESET 발생)
+    window.location.href = `/api/auth/chzzk/login`
   }
 
   return (

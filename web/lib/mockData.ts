@@ -959,4 +959,36 @@ export const mockApiResponses = {
       },
     }
   },
+  // 뱃지 API 응답
+  '/badges/:chzzkChannelId/tiers': () => ({
+    data: {
+      tiers: [
+        { id: 'badge-1', tier: 'bronze', threshold_amount: 10000, created_at: new Date().toISOString() },
+        { id: 'badge-2', tier: 'silver', threshold_amount: 50000, created_at: new Date().toISOString() },
+        { id: 'badge-3', tier: 'gold', threshold_amount: 100000, created_at: new Date().toISOString() },
+        { id: 'badge-4', tier: 'platinum', threshold_amount: 500000, created_at: new Date().toISOString() },
+        { id: 'badge-5', tier: 'diamond', threshold_amount: 1000000, created_at: new Date().toISOString() },
+      ],
+    },
+  }),
+  '/badges/:chzzkChannelId/holders': () => ({
+    data: {
+      holders: [
+        { id: 'holder-1', chzzk_user_id: 'viewer_1', display_name: '시청자1', tier: 'gold', threshold_amount: 100000, total_donation: '150000', achieved_at: new Date().toISOString() },
+        { id: 'holder-2', chzzk_user_id: 'viewer_2', display_name: '시청자2', tier: 'silver', threshold_amount: 50000, total_donation: '80000', achieved_at: new Date().toISOString() },
+        { id: 'holder-3', chzzk_user_id: 'viewer_3', display_name: '시청자3', tier: 'bronze', threshold_amount: 10000, total_donation: '30000', achieved_at: new Date().toISOString() },
+      ],
+    },
+  }),
+  '/badges/:chzzkChannelId/user/:chzzkUserId': () => ({
+    data: {
+      badges: [
+        { id: 'badge-1', tier: 'gold', threshold_amount: 100000, achieved_at: new Date().toISOString() },
+        { id: 'badge-2', tier: 'silver', threshold_amount: 50000, achieved_at: new Date().toISOString() },
+        { id: 'badge-3', tier: 'bronze', threshold_amount: 10000, achieved_at: new Date().toISOString() },
+      ],
+      totalDonation: 150000,
+      highestBadge: { id: 'badge-1', tier: 'gold', threshold_amount: 100000 },
+    },
+  }),
 }

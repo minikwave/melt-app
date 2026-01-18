@@ -1,97 +1,194 @@
-# 치지직 API 분석 및 활용 방안
+# 치지직 치즈 후원 API 분석 결과
 
-## 참고 사이트 분석
+> 2026년 1월 18일 분석 완료
 
-### 1. 치지직 공식 API 문서 (https://chzzk.gitbook.io/chzzk)
+## 1. 확인된 API 엔드포인트
 
-#### 주요 API 카테고리
+### 후원 팝업 열 때 (사전 조회 API)
 
-**User API**
-- 로그인 유저의 치지직 채널 정보 조회
-- **활용**: Melt 프로젝트에서 사용자 인증 및 프로필 정보 연동
+| 순서 | 메서드 | 엔드포인트 | 설명 |
+|-----|-------|-----------|------|
+| 1 | POST | `https://api.chzzk.naver.com/service/live-status` | 라이브 상태 확인 |
+| 2 | GET | `https://api.chzzk.naver.com/commercial/v1/donation/tts/benefit?channelId={channelId}` | TTS 혜택 정보 |
+| 3 | GET | `https://api.chzzk.naver.com/commercial/v1/coin/balance` | 치즈 잔액 조회 |
+| 4 | GET | `https://api.chzzk.naver.com/service/v1/channels/{channelId}/tts` | TTS 설정 |
 
-**Channel API**
-- 타 채널 정보 조회
-- **활용**: 크리에이터 검색, 채널 정보 표시, 팔로우 기능
+### 실제 후원 전송 API (핵심)
 
-**Category API**
-- 카테고리 목록 및 정보 조회
-- **활용**: 방송 카테고리별 필터링 (선택적)
+```
+POST https://api.chzzk.naver.com/commercial/v1/donate
+```
 
-**Live API**
-- 라이브 목록 조회
-- 방송 설정 관리
-- **활용**: 방송 중 여부 표시, 최근 방송 정보
+#### 요청 헤더
+```
+Content-Type: application/json
+Referer: https://chzzk.naver.com/live/{channelId}
+Cookie: (치지직 로그인 세션)
+```
 
-**Chat API**
-- 채팅 메시지 전송
-- 채팅 공지 등록
-- 채팅 설정 관리
-- **활용**: Melt는 치지직 채팅과 분리되지만, 참고용으로 활용
+#### 요청 본문 (Request Payload)
+```json
+{
+  "channelId": "54a0fcbd1d146bcce1219d5a1d165557",
+  "nickname": "후원자닉네임",
+  "liveId": 16783517,
+  "donationType": "CHAT",
+  "donationSubType": null,
+  "payType": "CURRENCY",
+  "productId": null,
+  "payAmount": 1000,
+  "donationText": "후원 메시지 내용",
+  "videoDescription": null,
+  "donationImageUrl": "",
+  "donationVideoUrl": "",
+  "useSpeech": true,
+  "extras": {
+    "chatType": "STREAMING",
+    "osType": "PC",
+    "streamingChannelId": "54a0fcbd1d146bcce1219d5a1d165557",
+    "emojis": {}
+  },
+  "emojis": null,
+  "createdBadge": null,
+  "largeDonationEnvelopeAnimationCode": null,
+  "donationCampaignId": null,
+  "nvoiceSpeakerType": null
+}
+```
 
-#### 용어 정리
-- **채널(Channel)**: 치지직의 모든 사용자가 기본적으로 소유하고 있는 채널
-- **채널 ID**: 채널 식별자
-- **라이브(Live)**: 현재 실시간으로 진행 중인 방송
-- **카테고리(Category)**: 방송 분류 카테고리
+#### 응답 (Response)
+```json
+{
+  "code": 200,
+  "message": null,
+  "content": {
+    "channelId": "54a0fcbd1d146bcce1219d5a1d165557",
+    "nickname": "후원자닉네임",
+    "liveId": 16783517,
+    "donationType": "CHAT",
+    "payType": "CURRENCY",
+    "payAmount": 1000,
+    "donationText": "후원 메시지 내용",
+    "useSpeech": true,
+    ...
+  }
+}
+```
 
-### 2. Awesome CHZZK (https://github.com/dokdo2013/awesome-chzzk)
+### 후원 완료 후 (후속 조회 API)
 
-#### 유용한 오픈소스 프로젝트
+| 메서드 | 엔드포인트 | 설명 |
+|-------|-----------|------|
+| GET | `https://comm-api.game.naver.com/nng_main/v1/notification/new` | 새 알림 확인 |
+| GET | `https://comm-api.game.naver.com/nng_main/v1/dm?limit=1` | DM 확인 |
 
-**SDK 및 라이브러리**
-- `kimcore/chzzk` - TypeScript 비공식 API 라이브러리
-- `Kwabang/chzzk-sdk` - Node.js SDK
-- `Helloyunho/spark` - JavaScript API
-- **활용**: 백엔드에서 치지직 API 호출 시 참고
+## 2. 주요 파라미터 설명
 
-**서드파티 서비스**
-- `cheese-remote` - 치즈 후원 모아보기
-- `chzzkcounts` - 실시간 팔로워 수 카운팅
-- **활용**: 통계 및 대시보드 기능 참고
+### donationType
+- `CHAT`: 일반 채팅 후원 (텍스트 메시지)
+- 기타: 영상/이미지 후원 등
 
-**디스코드 봇**
-- 여러 알림 봇 프로젝트
-- **활용**: 알림 시스템 구현 시 참고
+### payType
+- `CURRENCY`: 치즈 (기본)
+- 기타: 다른 결제 수단
 
-### 3. CHZZK 비공식 API 라이브러리 (https://github.com/kimcore/chzzk)
+### payAmount
+- 최소: 1,000원
+- 단위: 원 (KRW)
 
-#### 주요 기능
-- TypeScript 기반 비공식 API 라이브러리
-- 채널 정보, 라이브 정보, 채팅 등 다양한 기능 제공
-- **활용**: 백엔드에서 치지직 API 연동 시 사용 가능
+### useSpeech
+- `true`: TTS 읽기 활성화
+- `false`: TTS 비활성화
 
-## Melt 프로젝트에 적용할 수 있는 부분
+### liveId
+- 현재 진행 중인 라이브의 고유 ID
+- **라이브 중일 때만 후원 가능**
 
-### 1. 채널 정보 연동
-- 치지직 API를 통해 실시간 채널 정보 조회
-- 팔로워 수, 방송 중 여부 등 표시
-- 채널 썸네일 및 설명 정보
+## 3. TTS 정보
 
-### 2. 라이브 방송 정보
-- 현재 방송 중인지 여부 표시
-- 최근 방송 정보
-- 방송 카테고리 정보
+### benefit API 응답
+```json
+{
+  "code": 200,
+  "message": null,
+  "content": {
+    "ttsBenefitAvailable": false,
+    "ttsBenefitMaxCount": 0,
+    "ttsBenefitRemainCount": 0,
+    "ttsBenefitAmount": 200
+  }
+}
+```
 
-### 3. 사용자 정보 연동
-- 치지직 프로필 정보 동기화
-- 채널 정보 자동 연동
+### 기본 설정
+- 기본 TTS: 유나 (기본형)
+- `useSpeech: true`로 활성화
 
-### 4. 통계 및 분석
-- 팔로워 수 추이
-- 방송 통계
-- 후원 통계와 연계
+## 4. 치즈 잔액 조회
 
-## 구현 우선순위
+### balance API 응답
+```json
+{
+  "code": 200,
+  "message": null,
+  "content": {
+    "coinBalance": 40450,
+    "coinCurrency": "NGSCASH"
+  }
+}
+```
 
-### Phase 1 (즉시 구현)
-1. 채널 정보 연동 (썸네일, 설명, 팔로워 수)
-2. 방송 중 여부 표시
+## 5. Melt 적용 방안
 
-### Phase 2 (단기 구현)
-1. 라이브 방송 정보 표시
-2. 카테고리 필터링
+### 현재 제약사항
 
-### Phase 3 (장기 구현)
-1. 실시간 통계 연동
-2. 고급 분석 기능
+1. **CORS 제한**: `Access-Control-Allow-Origin: https://chzzk.naver.com` 
+   - Melt 도메인에서 치지직 API 직접 호출 불가
+2. **인증 문제**: 사용자의 치지직 세션 쿠키를 Melt에서 사용 불가
+3. **라이브 필수 아님**: 라이브 중이 아니어도 후원 가능 확인됨 ✅
+
+### 구현된 플로우 (UX 최적화)
+
+```
+[Melt]                           [치지직]
+   │                                │
+   │ 1. 금액 선택 (1천~5만원)        │
+   │ 2. 메시지 작성                  │
+   │ 3. Intent 생성 (금액 포함)      │
+   │ 4. localStorage 저장           │
+   │ 5. 클립보드에 메시지 복사       │
+   │                                │
+   │ ──── 새 탭으로 치지직 열기 ───▶ │
+   │                                │
+   │                    6. 후원창 열기│
+   │                    7. 메시지 붙여넣기 (Ctrl+V)
+   │                    8. 후원 전송 │
+   │                                │
+   │ ◀──── "후원 완료했어요" 클릭 ── │
+   │       (또는 탭 전환 자동 감지)  │
+   │                                │
+   │ 9. 완료 페이지 (금액 표시)      │
+   │ 10. 메시지 공개하기             │
+   │                                │
+```
+
+### 주요 개선 사항
+
+1. **금액 선택 UI**: 1천~5만원 프리셋 + 직접 입력
+2. **클립보드 자동 복사**: 치지직에서 붙여넣기만 하면 됨
+3. **새 탭 방식**: 사용자가 Melt 탭을 유지한 채 치지직 이용
+4. **탭 전환 감지**: `visibilitychange` 이벤트로 자동 완료 처리
+5. **금액 저장**: Intent에 금액 저장, 피드에 금액 표시
+
+## 6. 관련 파일
+
+- `web/app/app/channels/[chzzkChannelId]/donate/page.tsx`
+- `web/app/app/channels/[chzzkChannelId]/donate/complete/page.tsx`
+- `web/components/DonateButton.tsx`
+- `backend/src/routes/donations.ts`
+
+## 7. 추가 확인 필요 사항
+
+- [ ] 라이브 종료 후 VOD에서 후원 가능 여부
+- [ ] 모바일 앱 딥링크 존재 여부
+- [ ] 후원 완료 콜백/웹훅 존재 여부

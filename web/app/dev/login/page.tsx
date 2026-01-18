@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useRouter } from 'next/navigation'
@@ -20,22 +20,60 @@ export default function DevLoginPage() {
     { chzzk_user_id: 'viewer_3', display_name: '시청자3', role: 'viewer' },
   ]
 
-  const handleLogin = (userId: string) => {
-    // 더미 데이터 모드: 쿠키만 설정하고 바로 이동
+  const handleLogin = async (userId: string) => {
     const user = userList.find(u => u.chzzk_user_id === userId)
     if (!user) return
 
-    // 더미 세션 토큰 생성 (JWT 형식이지만 간단한 더미)
-    const mockToken = `mock_${userId}_${Date.now()}`
-    Cookies.set('melt_session', mockToken, { path: '/', expires: 7 })
-    Cookies.set('mock_user_id', userId, { path: '/' })
-    Cookies.set('mock_user_role', user.role, { path: '/' })
-    Cookies.set('mock_user_name', user.display_name, { path: '/' })
-    // 온보딩 상태 초기화 (새 로그인 시 온보딩 필요)
-    Cookies.remove('mock_onboarding_complete', { path: '/' })
-    
-    // 온보딩 페이지로 이동 (온보딩이 완료되면 자동으로 /app으로 이동)
-    router.push('/onboarding')
+    // 백엔드 API를 통해 로그인 시도
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      const response = await fetch(`${apiUrl}/dev/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ chzzk_user_id: userId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          // 개발자 모드가 비활성화된 경우
+          alert('개발자 모드가 비활성화되어 있습니다.\n백엔드 환경 변수 ENABLE_DEV_MODE=true로 설정하세요.')
+          return
+        }
+        throw new Error(data.error || '로그인 실패')
+      }
+
+      // 로그인 성공
+      // 백엔드에서 쿠키가 설정되므로, 프론트엔드에서도 추가 정보 저장
+      Cookies.set('mock_user_id', userId, { path: '/' })
+      Cookies.set('mock_user_role', user.role, { path: '/' })
+      Cookies.set('mock_user_name', user.display_name, { path: '/' })
+      Cookies.remove('mock_onboarding_complete', { path: '/' })
+      
+      // 온보딩 페이지로 이동
+      router.push('/onboarding')
+    } catch (error: any) {
+      console.error('Dev login error:', error)
+      
+      // 네트워크 오류 등으로 백엔드에 연결할 수 없는 경우
+      // 개발 환경에서만 로컬 쿠키 모드로 폴백
+      if (process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_FORCE_MOCK === 'true') {
+        console.warn('⚠️ Backend not available, using local cookie mode')
+        const mockToken = `mock_${userId}_${Date.now()}`
+        Cookies.set('melt_session', mockToken, { path: '/', expires: 7 })
+        Cookies.set('mock_user_id', userId, { path: '/' })
+        Cookies.set('mock_user_role', user.role, { path: '/' })
+        Cookies.set('mock_user_name', user.display_name, { path: '/' })
+        Cookies.remove('mock_onboarding_complete', { path: '/' })
+        router.push('/onboarding')
+      } else {
+        alert(error.message || '로그인에 실패했습니다.')
+      }
+    }
   }
 
   return (
@@ -44,7 +82,10 @@ export default function DevLoginPage() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">개발 모드 로그인</h1>
           <p className="text-neutral-400 text-sm">
-            더미 데이터로 테스트하세요
+            목 데이터로 테스트하세요
+          </p>
+          <p className="text-blue-400 text-xs mt-2">
+            💡 실제 네이버 계정 없이도 테스트 가능합니다
           </p>
         </div>
 

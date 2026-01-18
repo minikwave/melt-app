@@ -27,6 +27,12 @@ FRONTEND_URL=http://localhost:3000
 # Server
 PORT=3001
 NODE_ENV=development
+
+# 개발자 모드 활성화/비활성화 (선택사항)
+# true로 설정하면 목 데이터로 누구나 접근 가능
+# 개발 환경(NODE_ENV=development)에서는 기본적으로 활성화됨
+# 프로덕션에서는 false로 설정하거나 설정하지 않으면 비활성화됨
+ENABLE_DEV_MODE=true
 ```
 
 ## 환경 변수 설명
@@ -64,9 +70,19 @@ OAuth 콜백 URL
 - 개발: `http://localhost:3000`
 - 프로덕션: `https://your-domain.com`
 
+### ALLOWED_DEV_USERS (선택사항)
+개발자 모드(`/dev/login`) 접근을 허용할 사용자 목록
+- 형식: 쉼표로 구분된 `chzzk_user_id` 목록
+- 예: `ALLOWED_DEV_USERS=creator_1,viewer_1,admin_user`
+- **중요**: 
+  - 설정하지 않으면 개발 환경(`NODE_ENV=development`)에서 모든 사용자 접근 가능
+  - 프로덕션 환경에서는 반드시 설정하여 접근을 제한해야 합니다
+  - 개발자 모드 접근 제한은 보안상 매우 중요합니다
+
 ## 보안 주의사항
 
 1. **`.env` 파일은 절대 Git에 커밋하지 마세요**
 2. 프로덕션 환경에서는 모든 비밀 키를 강력한 랜덤 문자열로 변경하세요
 3. `ENCRYPTION_KEY`는 안전한 곳에 백업하세요 (키를 잃으면 복구 불가능)
 4. 환경 변수는 서버 환경에서만 설정하고, 클라이언트 코드에 노출하지 마세요
+5. **프로덕션 환경에서는 반드시 `ENABLE_DEV_MODE=false`로 설정하거나 설정하지 않아 개발자 모드를 비활성화하세요**

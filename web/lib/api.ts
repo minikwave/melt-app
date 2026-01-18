@@ -481,6 +481,29 @@ function getMockResponse(url: string, params?: any, data?: any): any {
     return mockApiResponses['/channels/:id'](chzzkChannelId)
   }
 
+  // /badges/:chzzkChannelId/tiers - 뱃지 티어 목록
+  if (url.match(/\/badges\/[^/]+\/tiers/)) {
+    const handler = mockApiResponses['/badges/:chzzkChannelId/tiers']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /badges/:chzzkChannelId/holders - 뱃지 보유자 목록
+  if (url.match(/\/badges\/[^/]+\/holders/)) {
+    const handler = mockApiResponses['/badges/:chzzkChannelId/holders']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /badges/:chzzkChannelId/user/:chzzkUserId - 특정 유저 뱃지 조회
+  if (url.match(/\/badges\/[^/]+\/user\/[^/]+/)) {
+    const handler = mockApiResponses['/badges/:chzzkChannelId/user/:chzzkUserId']
+    return typeof handler === 'function' ? handler() : handler
+  }
+
+  // /badges/:chzzkChannelId/check-and-grant - 뱃지 부여 확인
+  if (url.match(/\/badges\/[^/]+\/check-and-grant/)) {
+    return { data: { newBadges: [], totalDonation: 0 } }
+  }
+
   return null
 }
 

@@ -76,6 +76,9 @@
    - `backend/db/migrations/001_add_channel_urls.sql` 실행
    - `backend/db/migrations/002_add_follows_and_reads.sql` 실행
    - `backend/db/migrations/003_add_user_profile_fields.sql` 실행
+   - `backend/db/migrations/004_add_intended_amount.sql` 실행
+   - `backend/db/migrations/005_add_chzzk_api_credentials.sql` 실행
+   - `backend/db/migrations/006_add_onboarding_complete.sql` 실행
 
 #### 방법 2: Supabase CLI 사용
 

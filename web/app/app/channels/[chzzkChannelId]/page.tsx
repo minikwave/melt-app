@@ -17,20 +17,27 @@ export default function ChannelPage() {
     queryFn: () => api.get(`/channels/${chzzkChannelId}`),
   })
 
+  // 로그인 상태 확인 (선택적 - 로그인 없이도 접근 가능)
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
     retry: false,
   })
 
-  // 치즈 후원 완료 후 돌아왔는지 확인
+  // 치즈 후원 완료 후 돌아왔는지 확인 (로컬 체크 - 전역 핸들러가 있지만 이중 체크)
   useEffect(() => {
     const intentId = localStorage.getItem('melt_intent_id')
     const donationMessage = localStorage.getItem('melt_donation_message')
+    const storedChannelId = localStorage.getItem('melt_donation_channel_id')
     
-    if (intentId && donationMessage) {
-      // 완료 페이지로 이동
-      router.push(`/app/channels/${chzzkChannelId}/donate/complete`)
+    // 현재 채널과 저장된 채널이 일치하고 Intent ID가 있으면 완료 페이지로 이동
+    if (intentId && donationMessage && storedChannelId === chzzkChannelId) {
+      // 약간의 지연을 두어 전역 핸들러와 충돌 방지
+      const timer = setTimeout(() => {
+        router.push(`/app/channels/${chzzkChannelId}/donate/complete`)
+      }, 300)
+      
+      return () => clearTimeout(timer)
     }
   }, [chzzkChannelId, router])
 
@@ -38,13 +45,15 @@ export default function ChannelPage() {
   const userData = user?.data?.data?.user || user?.data?.user
   const currentUser = userData
   const isCreator = currentUser?.role === 'creator' || currentUser?.role === 'admin'
+  const isLoggedIn = !!currentUser
   const queryClient = useQueryClient()
 
-  // 팔로우 상태 확인
+  // 팔로우 상태 확인 (로그인한 시청자만)
   const { data: followStatus } = useQuery({
     queryKey: ['follow-status', chzzkChannelId],
     queryFn: () => api.get(`/channels/${chzzkChannelId}/follow-status`),
-    enabled: !isCreator,
+    enabled: isLoggedIn && !isCreator,
+    retry: false,
   })
 
   const followMutation = useMutation({
@@ -77,7 +86,10 @@ export default function ChannelPage() {
       {/* Header */}
       <div className="flex-shrink-0 bg-neutral-900 border-b border-neutral-800 p-4">
         <div className="flex items-center justify-between mb-3">
-          <Link href={isCreator ? "/app/creator/dashboard" : "/app/conversations"} className="text-neutral-400 hover:text-white">
+          <Link 
+            href={isLoggedIn ? (isCreator ? "/app/creator/dashboard" : "/app/conversations") : "/browse"} 
+            className="text-neutral-400 hover:text-white"
+          >
             ← 뒤로
           </Link>
           <h1 className="text-lg font-bold">
@@ -86,8 +98,23 @@ export default function ChannelPage() {
           <div className="w-8" /> {/* Spacer */}
         </div>
         
-        {/* 액션 버튼들 (시청자만) */}
-        {!isCreator && (
+        {/* 로그인 안내 (로그인하지 않은 경우) */}
+        {!isLoggedIn && (
+          <div className="mb-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+            <p className="text-xs text-blue-400 mb-2">
+              💡 로그인하면 메시지를 보내고 팔로우할 수 있습니다
+            </p>
+            <Link
+              href="/auth/naver"
+              className="block w-full py-2 rounded-lg bg-[#03C75A] text-white hover:bg-[#02B350] transition-colors text-center text-sm font-semibold"
+            >
+              네이버로 시작하기
+            </Link>
+          </div>
+        )}
+        
+        {/* 액션 버튼들 (로그인한 시청자만) */}
+        {isLoggedIn && !isCreator && (
           <div className="flex gap-2">
             <button
               onClick={() => {

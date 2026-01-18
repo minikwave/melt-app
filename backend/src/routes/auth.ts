@@ -122,13 +122,24 @@ router.get('/chzzk/callback', async (req, res) => {
 
     // 쿠키에 세션 저장
     // 온보딩 상태 확인 후 적절한 페이지로 리다이렉트
-    const onboardingResult = await pool.query(
-      `SELECT onboarding_complete, role FROM users WHERE id = $1`,
-      [user.id]
-    );
-    
-    const needsOnboarding = !onboardingResult.rows[0]?.onboarding_complete;
-    const userRole = onboardingResult.rows[0]?.role;
+    let needsOnboarding = true;
+    try {
+      const onboardingResult = await pool.query(
+        `SELECT onboarding_complete, role FROM users WHERE id = $1`,
+        [user.id]
+      );
+      
+      // onboarding_complete 컬럼이 없을 수 있으므로 안전하게 처리
+      const row = onboardingResult.rows[0];
+      if (row) {
+        // role이 viewer가 아니거나 onboarding_complete가 true면 온보딩 완료로 간주
+        needsOnboarding = row.onboarding_complete === false && row.role === 'viewer';
+      }
+    } catch (onboardingError) {
+      console.warn('Onboarding check failed (column may not exist):', onboardingError);
+      // 에러 발생 시 기본적으로 온보딩 페이지로 이동
+      needsOnboarding = true;
+    }
     
     let redirectUrl = `${process.env.FRONTEND_URL}/app`;
     if (needsOnboarding) {
@@ -144,19 +155,117 @@ router.get('/chzzk/callback', async (req, res) => {
       })
       .redirect(redirectUrl);
   } catch (error: any) {
-    console.error('OAuth error:', error?.response?.data || error);
+    console.error('=== OAuth Error Details ===');
+    console.error('Error message:', error?.message);
+    console.error('Error response status:', error?.response?.status);
+    console.error('Error response data:', JSON.stringify(error?.response?.data, null, 2));
+    console.error('Error code:', error?.code);
+    console.error('Full error:', error);
     
     // 에러 타입별 처리
     let errorCode = 'oauth_failed';
+    let errorDetail = '';
+    
     if (error?.response?.status === 400) {
       errorCode = 'invalid_code';
+      errorDetail = 'Token exchange failed';
     } else if (error?.response?.status === 401) {
       errorCode = 'unauthorized';
+      errorDetail = 'Invalid credentials';
+    } else if (error?.code === 'ECONNREFUSED') {
+      errorCode = 'connection_error';
+      errorDetail = 'Cannot connect to Chzzk API';
+    } else if (error?.message?.includes('User')) {
+      errorCode = 'user_creation_failed';
+      errorDetail = 'Database error';
     }
+    
+    console.error(`OAuth failed with code: ${errorCode}, detail: ${errorDetail}`);
     
     // 에러 시 프론트엔드 에러 페이지로 리다이렉트
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     res.redirect(`${frontendUrl}/auth/chzzk/callback?error=${errorCode}`);
+  }
+});
+
+// Vercel에서 OAuth 완료 후 유저 정보 전달받아 처리
+// (치지직 API가 한국 외 지역에서 ECONNRESET 발생하므로 Vercel에서 토큰 교환)
+router.post('/chzzk/complete', async (req, res) => {
+  try {
+    const { chzzkUserId, displayName, accessToken, refreshToken, expiresIn } = req.body;
+    
+    if (!chzzkUserId) {
+      return res.status(400).json({ error: 'chzzkUserId is required' });
+    }
+    
+    // DB에 유저 저장/업데이트
+    const userResult = await pool.query(
+      `INSERT INTO users (chzzk_user_id, display_name, role)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (chzzk_user_id) 
+       DO UPDATE SET display_name = $2, updated_at = now()
+       RETURNING id, chzzk_user_id, display_name, role, onboarding_complete`,
+      [chzzkUserId, displayName, 'viewer']
+    );
+    
+    const user = userResult.rows[0];
+    
+    // OAuth 토큰 암호화하여 저장
+    if (accessToken) {
+      try {
+        const encryptedAccessToken = encrypt(accessToken);
+        const encryptedRefreshToken = refreshToken ? encrypt(refreshToken) : null;
+        
+        await pool.query(
+          `INSERT INTO oauth_tokens (user_id, access_token, refresh_token, expires_at)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_id)
+           DO UPDATE SET 
+             access_token = $2,
+             refresh_token = $3,
+             expires_at = $4,
+             updated_at = now()`,
+          [
+            user.id,
+            encryptedAccessToken,
+            encryptedRefreshToken,
+            expiresIn ? new Date(Date.now() + expiresIn * 1000) : null,
+          ]
+        );
+      } catch (tokenError) {
+        console.warn('Failed to save OAuth tokens (non-critical):', tokenError);
+      }
+    }
+    
+    // Melt 세션 JWT 생성
+    const appJwt = jwt.sign(
+      { sub: chzzkUserId, name: displayName, userId: user.id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+    
+    // 온보딩 필요 여부 확인
+    const needsOnboarding = !user.onboarding_complete && user.role === 'viewer';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    
+    let redirectUrl = `${frontendUrl}/app`;
+    if (needsOnboarding) {
+      redirectUrl = `${frontendUrl}/onboarding`;
+    }
+    
+    res.json({
+      token: appJwt,
+      redirectUrl,
+      user: {
+        id: user.id,
+        chzzkUserId: user.chzzk_user_id,
+        displayName: user.display_name,
+        role: user.role,
+      },
+    });
+  } catch (error: any) {
+    console.error('Complete OAuth error:', error);
+    res.status(500).json({ error: 'Failed to complete OAuth' });
   }
 });
 

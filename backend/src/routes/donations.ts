@@ -7,7 +7,7 @@ const router = express.Router();
 // 후원 Intent 생성 (치즈 보내기 버튼 클릭 시)
 router.post('/intent', authRequired, async (req: AuthRequest, res) => {
   try {
-    const { chzzkChannelId } = req.body;
+    const { chzzkChannelId, amount } = req.body;
 
     if (!chzzkChannelId) {
       return res.status(400).json({ error: 'chzzkChannelId is required' });
@@ -42,15 +42,16 @@ router.post('/intent', authRequired, async (req: AuthRequest, res) => {
       channelId = channelResult.rows[0].id;
     }
 
-    // Intent 생성
+    // Intent 생성 (금액 포함)
     const intentResult = await pool.query(
-      'INSERT INTO donation_intents (viewer_user_id, channel_id) VALUES ($1, $2) RETURNING id',
-      [viewerUserId, channelId]
+      'INSERT INTO donation_intents (viewer_user_id, channel_id, intended_amount) VALUES ($1, $2, $3) RETURNING id',
+      [viewerUserId, channelId, amount || null]
     );
 
     res.json({
       intentId: intentResult.rows[0].id,
       chzzkChannelId,
+      amount: amount || null,
     });
   } catch (error) {
     console.error('Create intent error:', error);
@@ -146,7 +147,57 @@ router.post('/:donationEventId/confirm', authRequired, async (req: AuthRequest, 
       return res.status(404).json({ error: 'Donation event not found' });
     }
 
-    res.json({ ok: true, donation: donationResult.rows[0] });
+    const donation = donationResult.rows[0];
+    const viewerUserId = donation.viewer_user_id;
+    const channelId = donation.channel_id;
+
+    // 뱃지 자동 부여 로직
+    let newBadges: any[] = [];
+    try {
+      // 유저의 누적 후원액 계산
+      const totalResult = await pool.query(
+        `SELECT COALESCE(SUM(amount), 0) as total
+         FROM donation_events
+         WHERE channel_id = $1 AND viewer_user_id = $2 AND status = 'CONFIRMED'`,
+        [channelId, viewerUserId]
+      );
+
+      const totalDonation = parseInt(totalResult.rows[0].total) || 0;
+
+      // 아직 획득하지 않은 뱃지 중 자격이 되는 것 찾기
+      const eligibleBadges = await pool.query(
+        `SELECT b.id, b.tier, b.threshold_amount
+         FROM badges b
+         WHERE b.channel_id = $1
+           AND b.threshold_amount <= $2
+           AND b.id NOT IN (
+             SELECT badge_id FROM user_badges 
+             WHERE user_id = $3 AND channel_id = $1
+           )
+         ORDER BY b.threshold_amount ASC`,
+        [channelId, totalDonation, viewerUserId]
+      );
+
+      // 새 뱃지 부여
+      for (const badge of eligibleBadges.rows) {
+        await pool.query(
+          `INSERT INTO user_badges (user_id, channel_id, badge_id)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (user_id, channel_id, badge_id) DO NOTHING`,
+          [viewerUserId, channelId, badge.id]
+        );
+        newBadges.push(badge);
+      }
+    } catch (badgeError) {
+      console.error('Badge grant error (non-critical):', badgeError);
+      // 뱃지 부여 실패해도 후원 확정은 성공으로 처리
+    }
+
+    res.json({ 
+      ok: true, 
+      donation: donation,
+      newBadges: newBadges,
+    });
   } catch (error) {
     console.error('Confirm donation error:', error);
     res.status(500).json({ error: 'Failed to confirm donation' });
@@ -157,11 +208,14 @@ router.post('/:donationEventId/confirm', authRequired, async (req: AuthRequest, 
 router.post('/:intentId/complete', authRequired, async (req: AuthRequest, res) => {
   try {
     const { intentId } = req.params;
-    const { message } = req.body;
+    const { message, amount, visibility = 'public' } = req.body;
 
     if (!message || !message.trim()) {
       return res.status(400).json({ error: 'message is required' });
     }
+
+    // visibility 검증
+    const messageVisibility = visibility === 'private' ? 'private' : 'public';
 
     // 유저 조회
     const userResult = await pool.query(
@@ -189,6 +243,8 @@ router.post('/:intentId/complete', authRequired, async (req: AuthRequest, res) =
     }
 
     const intent = intentResult.rows[0];
+    // Intent에 저장된 금액 또는 요청으로 받은 금액 사용
+    const finalAmount = amount || intent.intended_amount || null;
 
     // 이미 완료된 Intent인지 확인
     const existingDonation = await pool.query(
@@ -199,23 +255,24 @@ router.post('/:intentId/complete', authRequired, async (req: AuthRequest, res) =
     let donationEventId: string;
 
     if (existingDonation.rows.length > 0) {
-      // 이미 존재하는 경우 업데이트
+      // 이미 존재하는 경우 업데이트 (금액 포함)
       donationEventId = existingDonation.rows[0].id;
       await pool.query(
         `UPDATE donation_events 
          SET status = 'OCCURRED', 
+             amount = COALESCE($2, amount),
              occurred_at = COALESCE(occurred_at, now())
          WHERE id = $1`,
-        [donationEventId]
+        [donationEventId, finalAmount]
       );
     } else {
-      // 새로 생성
+      // 새로 생성 (금액 포함)
       const donationResult = await pool.query(
         `INSERT INTO donation_events 
-         (intent_id, channel_id, viewer_user_id, status, source)
-         VALUES ($1, $2, $3, 'OCCURRED', 'user_flow')
+         (intent_id, channel_id, viewer_user_id, amount, status, source)
+         VALUES ($1, $2, $3, $4, 'OCCURRED', 'user_flow')
          RETURNING id`,
-        [intentId, intent.channel_id, intent.viewer_user_id]
+        [intentId, intent.channel_id, intent.viewer_user_id, finalAmount]
       );
       donationEventId = donationResult.rows[0].id;
     }
@@ -227,27 +284,31 @@ router.post('/:intentId/complete', authRequired, async (req: AuthRequest, res) =
     );
 
     if (existingMessage.rows.length === 0) {
-      // Public Donation Message 생성
+      // Donation Message 생성 (공개 또는 비공개)
       await pool.query(
         `INSERT INTO messages 
          (channel_id, author_user_id, type, visibility, content, related_donation_id)
-         VALUES ($1, $2, 'donation', 'public', $3, $4)`,
-        [intent.channel_id, intent.viewer_user_id, message.trim(), donationEventId]
+         VALUES ($1, $2, 'donation', $3, $4, $5)`,
+        [intent.channel_id, intent.viewer_user_id, messageVisibility, message.trim(), donationEventId]
       );
     } else {
-      // 기존 메시지 업데이트
+      // 기존 메시지 업데이트 (visibility 포함)
       await pool.query(
         `UPDATE messages 
-         SET content = $1, updated_at = now()
-         WHERE related_donation_id = $2`,
-        [message.trim(), donationEventId]
+         SET content = $1, visibility = $2, updated_at = now()
+         WHERE related_donation_id = $3`,
+        [message.trim(), messageVisibility, donationEventId]
       );
     }
 
     res.json({ 
       ok: true, 
       donationEventId,
-      message: '후원 메시지가 등록되었습니다.'
+      amount: finalAmount,
+      visibility: messageVisibility,
+      message: messageVisibility === 'public' 
+        ? '후원 메시지가 공개로 등록되었습니다.' 
+        : '후원 메시지가 크리에이터에게만 비공개로 전달되었습니다.'
     });
   } catch (error) {
     console.error('Complete donation error:', error);

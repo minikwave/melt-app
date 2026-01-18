@@ -35,7 +35,7 @@ export default function CreatorDashboard() {
     enabled: !!selectedChannel,
   })
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: isLoadingStats, error: statsError } = useQuery({
     queryKey: ['creator-stats', selectedChannel, period],
     queryFn: () => api.get('/creator/stats', {
       params: { chzzkChannelId: selectedChannel, period },
@@ -89,10 +89,22 @@ export default function CreatorDashboard() {
             >
               채널 설정
             </Link>
+            <Link
+              href="/app/creator/badges"
+              className="px-4 py-2 rounded-xl bg-yellow-500/20 border border-yellow-500/30 hover:bg-yellow-500/30 text-yellow-400 text-sm whitespace-nowrap"
+            >
+              뱃지 설정
+            </Link>
           </div>
 
           {/* 통계 섹션 */}
-          {stats?.data && (
+          {isLoadingStats ? (
+            <div className="text-center text-neutral-400 py-8">통계 로딩 중...</div>
+          ) : statsError ? (
+            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <p className="text-red-400 text-sm">통계를 불러올 수 없습니다.</p>
+            </div>
+          ) : stats?.data ? (
             <div className="space-y-4">
               {/* 기간 선택 */}
               <div className="flex gap-2">
@@ -118,17 +130,17 @@ export default function CreatorDashboard() {
                 <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
                   <div className="text-sm text-neutral-400 mb-1">총 후원액</div>
                   <div className="text-2xl font-bold">
-                    {stats.data.totalAmount?.toLocaleString()}원
+                    {(stats.data.totalAmount || 0).toLocaleString()}원
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
                   <div className="text-sm text-neutral-400 mb-1">후원 건수</div>
-                  <div className="text-2xl font-bold">{stats.data.totalCount}건</div>
+                  <div className="text-2xl font-bold">{stats.data.totalCount || 0}건</div>
                 </div>
                 <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
                   <div className="text-sm text-neutral-400 mb-1">평균 후원액</div>
                   <div className="text-2xl font-bold">
-                    {stats.data.averageAmount?.toLocaleString()}원
+                    {(stats.data.averageAmount || 0).toLocaleString()}원
                   </div>
                 </div>
                 <div className="p-4 rounded-xl bg-neutral-800 border border-neutral-700">
@@ -148,7 +160,7 @@ export default function CreatorDashboard() {
                   <div className="space-y-2">
                     {stats.data.topSupporters.map((supporter: any, index: number) => (
                       <div
-                        key={supporter.chzzk_user_id}
+                        key={supporter.chzzk_user_id || index}
                         className="flex items-center justify-between p-2 rounded-lg bg-neutral-900"
                       >
                         <div className="flex items-center gap-2">
@@ -156,17 +168,21 @@ export default function CreatorDashboard() {
                             #{index + 1}
                           </span>
                           <span className="font-semibold">
-                            {supporter.display_name || supporter.chzzk_user_id}
+                            {supporter.display_name || supporter.chzzk_user_id || '알 수 없음'}
                           </span>
                         </div>
                         <div className="text-sm text-neutral-400">
-                          {supporter.totalAmount?.toLocaleString()}원 ({supporter.count}건)
+                          {(supporter.totalAmount || 0).toLocaleString()}원 ({supporter.count || 0}건)
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
+            </div>
+          ) : (
+            <div className="text-center text-neutral-400 py-8">
+              채널 ID를 입력하여 통계를 확인하세요
             </div>
           )}
 

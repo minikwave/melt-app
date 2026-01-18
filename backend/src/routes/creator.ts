@@ -13,9 +13,21 @@ router.get('/inbox', authRequired, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'chzzkChannelId is required' });
     }
 
+    // 유저 조회
+    const userResult = await pool.query(
+      'SELECT id, role FROM users WHERE chzzk_user_id = $1',
+      [req.user?.sub]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const userId = userResult.rows[0].id;
+
     // 채널 조회
     const channelResult = await pool.query(
-      'SELECT id FROM channels WHERE chzzk_channel_id = $1',
+      'SELECT id, owner_user_id FROM channels WHERE chzzk_channel_id = $1',
       [chzzkChannelId]
     );
 
@@ -24,18 +36,24 @@ router.get('/inbox', authRequired, async (req: AuthRequest, res) => {
     }
 
     const channelId = channelResult.rows[0].id;
+    const isChannelOwner = channelResult.rows[0].owner_user_id === userId;
 
-    // 비공개 DM 조회
+    // 비공개 메시지 조회 (DM, 크리에이터 답장, 비공개 치즈 후원)
+    // 크리에이터가 자신의 방인 경우 모든 비공개 메시지를 볼 수 있음
     const dmResult = await pool.query(
-      `SELECT m.*, u.display_name, u.chzzk_user_id
+      `SELECT m.*, u.display_name, u.chzzk_user_id, de.amount as donation_amount
        FROM messages m
        JOIN users u ON m.author_user_id = u.id
+       LEFT JOIN donation_events de ON m.related_donation_id = de.id
        WHERE m.channel_id = $1
          AND m.visibility = 'private'
-         AND m.type IN ('dm', 'creator_reply')
+         AND (
+           m.type IN ('dm', 'creator_reply', 'donation')
+           OR (m.type = 'creator_reply' AND m.author_user_id = $2 AND $3 = true)
+         )
        ORDER BY m.created_at DESC
        LIMIT 50`,
-      [channelId]
+      [channelId, userId, isChannelOwner]
     );
 
     // 미확정 후원 조회
@@ -61,7 +79,7 @@ router.get('/inbox', authRequired, async (req: AuthRequest, res) => {
   }
 });
 
-// 통계 요약 (Phase 2)
+// 통계 요약 (Phase 2) - /stats/summary 별칭
 router.get('/stats/summary', authRequired, async (req: AuthRequest, res) => {
   try {
     const { chzzkChannelId, range = '30d' } = req.query;
@@ -106,6 +124,93 @@ router.get('/stats/summary', authRequired, async (req: AuthRequest, res) => {
       pending: parseInt(statsResult.rows[0].pending),
       totalAmount: parseInt(statsResult.rows[0].total_amount),
       period: range,
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ error: 'Failed to get stats' });
+  }
+});
+
+// 통계 상세 (기간별 필터, Top Supporters 포함)
+router.get('/stats', authRequired, async (req: AuthRequest, res) => {
+  try {
+    const { chzzkChannelId, period = 'week' } = req.query;
+
+    if (!chzzkChannelId) {
+      return res.status(400).json({ error: 'chzzkChannelId is required' });
+    }
+
+    // 채널 조회
+    const channelResult = await pool.query(
+      'SELECT id FROM channels WHERE chzzk_channel_id = $1',
+      [chzzkChannelId]
+    );
+
+    if (channelResult.rows.length === 0) {
+      return res.json({ 
+        totalAmount: 0, 
+        totalCount: 0, 
+        averageAmount: 0,
+        topSupporters: [],
+        period 
+      });
+    }
+
+    const channelId = channelResult.rows[0].id;
+
+    // 기간 계산
+    const days = period === 'day' ? 1 : period === 'week' ? 7 : 30;
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - days);
+
+    // 기본 통계 조회 (CONFIRMED만)
+    const statsResult = await pool.query(
+      `SELECT 
+         COUNT(*) as total_count,
+         COALESCE(SUM(amount), 0) as total_amount,
+         COALESCE(AVG(amount), 0) as average_amount
+       FROM donation_events
+       WHERE channel_id = $1
+         AND status = 'CONFIRMED'
+         AND occurred_at >= $2`,
+      [channelId, sinceDate]
+    );
+
+    const totalCount = parseInt(statsResult.rows[0].total_count) || 0;
+    const totalAmount = parseInt(statsResult.rows[0].total_amount) || 0;
+    const averageAmount = totalCount > 0 ? Math.round(totalAmount / totalCount) : 0;
+
+    // Top Supporters 조회
+    const topSupportersResult = await pool.query(
+      `SELECT 
+         u.chzzk_user_id,
+         u.display_name,
+         COUNT(*) as count,
+         COALESCE(SUM(de.amount), 0) as total_amount
+       FROM donation_events de
+       JOIN users u ON de.viewer_user_id = u.id
+       WHERE de.channel_id = $1
+         AND de.status = 'CONFIRMED'
+         AND de.occurred_at >= $2
+       GROUP BY u.id, u.chzzk_user_id, u.display_name
+       ORDER BY total_amount DESC, count DESC
+       LIMIT 10`,
+      [channelId, sinceDate]
+    );
+
+    const topSupporters = topSupportersResult.rows.map((row) => ({
+      chzzk_user_id: row.chzzk_user_id,
+      display_name: row.display_name,
+      count: parseInt(row.count),
+      totalAmount: parseInt(row.total_amount),
+    }));
+
+    res.json({
+      totalAmount,
+      totalCount,
+      averageAmount,
+      topSupporters,
+      period,
     });
   } catch (error) {
     console.error('Get stats error:', error);
@@ -179,6 +284,35 @@ router.get('/inbox/unread-count', authRequired, async (req: AuthRequest, res) =>
   } catch (error) {
     console.error('Get inbox unread count error:', error);
     res.status(500).json({ error: 'Failed to get inbox unread count' });
+  }
+});
+
+// 인기 크리에이터 목록 (인증 불필요 - 둘러보기용)
+router.get('/popular', async (req, res) => {
+  try {
+    const { limit = 20 } = req.query;
+
+    // 팔로워 수 기준으로 정렬된 크리에이터 목록
+    const result = await pool.query(
+      `SELECT 
+        c.id,
+        c.chzzk_channel_id,
+        c.name,
+        c.channel_url,
+        u.display_name as owner_name,
+        (SELECT COUNT(*) FROM user_follows WHERE channel_id = c.id) as follower_count
+       FROM channels c
+       LEFT JOIN users u ON c.owner_user_id = u.id
+       WHERE c.owner_user_id IS NOT NULL
+       ORDER BY follower_count DESC, c.name ASC
+       LIMIT $1`,
+      [parseInt(limit as string)]
+    );
+
+    res.json({ creators: result.rows });
+  } catch (error) {
+    console.error('Get popular creators error:', error);
+    res.status(500).json({ error: 'Failed to get popular creators' });
   }
 });
 

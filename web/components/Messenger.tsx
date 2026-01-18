@@ -4,7 +4,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { formatDistanceToNow } from 'date-fns'
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import MessageInput from './MessageInput'
+import { UserBadge } from './Badge'
 
 interface MessengerProps {
   chzzkChannelId: string
@@ -14,8 +16,12 @@ interface MessengerProps {
 
 export default function Messenger({ chzzkChannelId, currentUserId, isCreator }: MessengerProps) {
   const [showDmOnly, setShowDmOnly] = useState(false)
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const [newMessageCount, setNewMessageCount] = useState(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
+  const previousMessageIdsRef = useRef<Set<string>>(new Set())
 
   // 공개 피드 (치즈 메시지 + 크리에이터 메시지 + RT 메시지)
   const { data: feed } = useQuery({
@@ -37,10 +43,56 @@ export default function Messenger({ chzzkChannelId, currentUserId, isCreator }: 
     refetchInterval: 5000,
   })
 
-  // 스크롤을 맨 아래로
+  // 스크롤 위치 감지 (사용자가 위로 스크롤했는지 확인)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [feed, inbox, showDmOnly])
+    const container = messagesContainerRef.current
+    if (!container) return
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100 // 하단 100px 이내
+      setShouldAutoScroll(isNearBottom)
+    }
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // 새 메시지 감지 및 알림
+  useEffect(() => {
+    const currentMessages = showDmOnly 
+      ? (inbox?.data?.dms || [])
+      : (feed?.data?.feed || [])
+    
+    if (currentMessages.length > 0) {
+      const currentIds = new Set(currentMessages.map((m: any) => m.id))
+      const previousIds = previousMessageIdsRef.current
+      
+      // 새 메시지 수 계산
+      let newCount = 0
+      currentIds.forEach((id) => {
+        if (!previousIds.has(id)) {
+          newCount++
+        }
+      })
+      
+      if (newCount > 0 && !shouldAutoScroll) {
+        setNewMessageCount((prev) => prev + newCount)
+      }
+      
+      previousMessageIdsRef.current = currentIds
+    }
+  }, [feed, inbox, showDmOnly, shouldAutoScroll])
+
+  // 자동 스크롤 (하단에 있을 때만)
+  useEffect(() => {
+    if (shouldAutoScroll) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        setNewMessageCount(0) // 스크롤하면 새 메시지 카운트 리셋
+      }, 100)
+    }
+  }, [feed, inbox, showDmOnly, shouldAutoScroll])
 
   // 메시지 전송 후 새로고침
   const handleMessageSent = () => {
@@ -98,7 +150,23 @@ export default function Messenger({ chzzkChannelId, currentUserId, isCreator }: 
       )}
 
       {/* 메시지 목록 - 내부 메신저 형태 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-3 relative"
+      >
+        {/* 새 메시지 알림 배지 */}
+        {newMessageCount > 0 && !shouldAutoScroll && (
+          <button
+            onClick={() => {
+              setShouldAutoScroll(true)
+              setNewMessageCount(0)
+            }}
+            className="sticky top-4 z-10 mx-auto block px-4 py-2 rounded-full bg-blue-500 text-white text-sm font-semibold shadow-lg hover:bg-blue-600 transition-colors"
+          >
+            새 메시지 {newMessageCount}개 ↓
+          </button>
+        )}
+        
         {publicMessages.length === 0 ? (
           <div className="text-center text-neutral-400 py-8">
             아직 메시지가 없습니다
@@ -110,30 +178,49 @@ export default function Messenger({ chzzkChannelId, currentUserId, isCreator }: 
               message={msg}
               currentUserId={currentUserId}
               isCreator={isCreator}
+              chzzkChannelId={chzzkChannelId}
             />
           ))
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 입력창 */}
-      <MessageInput
-        chzzkChannelId={chzzkChannelId}
-        isCreator={isCreator}
-        onMessageSent={handleMessageSent}
-      />
+      {/* 입력창 (로그인한 사용자만) */}
+      {currentUserId && (
+        <MessageInput
+          chzzkChannelId={chzzkChannelId}
+          isCreator={isCreator}
+          onMessageSent={handleMessageSent}
+        />
+      )}
+      {!currentUserId && (
+        <div className="flex-shrink-0 p-4 border-t border-neutral-800 bg-neutral-900">
+          <div className="text-center py-4">
+            <p className="text-sm text-neutral-400 mb-3">
+              메시지를 보내려면 로그인이 필요합니다
+            </p>
+            <Link
+              href="/auth/naver"
+              className="inline-block px-6 py-2 rounded-lg bg-[#03C75A] text-white hover:bg-[#02B350] transition-colors text-sm font-semibold"
+            >
+              네이버로 시작하기
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
 // 메시지 버블 - 타입별로 다르게 표시
-function MessageBubble({ message, currentUserId, isCreator }: any) {
+function MessageBubble({ message, currentUserId, isCreator, chzzkChannelId }: any) {
   const isMyMessage = message.author?.chzzkUserId === currentUserId || message.author?.chzzk_user_id === currentUserId
   const isCreatorMessage = message.type === 'creator_post' || message.type === 'creator_reply'
   const isDonationMessage = message.type === 'donation' || message.donationAmount || message.donation_amount
   const isRetweetMessage = message.isRetweet || message.is_retweet || message.type === 'retweet'
-  const isRead = message.read !== false // 기본값은 true
+  const isRead = message.isRead !== false && message.read !== false // 백엔드에서 isRead 또는 read 필드 확인
   const isSent = message.sent !== false // 기본값은 true
+  const authorUserId = message.author?.chzzkUserId || message.author?.chzzk_user_id
   
   // 메시지 타입별 스타일 결정
   let bubbleStyle = ''
@@ -172,6 +259,14 @@ function MessageBubble({ message, currentUserId, isCreator }: any) {
           <span className="font-semibold text-sm">
             {message.author?.displayName || message.author?.display_name || message.author?.chzzkUserId || message.author?.chzzk_user_id || '알 수 없음'}
           </span>
+          {/* 후원 뱃지 표시 */}
+          {!isCreatorMessage && chzzkChannelId && authorUserId && (
+            <UserBadge
+              chzzkChannelId={chzzkChannelId}
+              chzzkUserId={authorUserId}
+              size="sm"
+            />
+          )}
           {badgeText && (
             <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${badgeColor}`}>
               {badgeText}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../../../lib/api'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -9,17 +9,45 @@ import { useEffect } from 'react'
 
 export default function AdminUsersPage() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<string>('')
 
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: () => api.get('/auth/me'),
   })
 
-  const { data: users, isLoading } = useQuery({
-    queryKey: ['admin-users', search],
-    queryFn: () => api.get('/admin/users', { params: { search } }),
+  const { data: users, isLoading, refetch } = useQuery({
+    queryKey: ['admin-users', search, roleFilter],
+    queryFn: () => api.get('/admin/users', { params: { search, role: roleFilter || undefined } }),
   })
+
+  const changeRoleMutation = useMutation({
+    mutationFn: ({ userId, role }: { userId: string; role: string }) =>
+      api.put(`/admin/users/${userId}/role`, { role }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      alert('역할이 변경되었습니다.')
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.error || '역할 변경에 실패했습니다.')
+    },
+  })
+
+  const handleRoleChange = (userId: string, currentRole: string) => {
+    const newRole = prompt(
+      `새 역할을 입력하세요 (viewer, creator, admin)\n현재: ${currentRole}`,
+      currentRole
+    )
+    if (newRole && ['viewer', 'creator', 'admin'].includes(newRole)) {
+      if (confirm(`정말로 역할을 '${newRole}'(으)로 변경하시겠습니까?`)) {
+        changeRoleMutation.mutate({ userId, role: newRole })
+      }
+    } else if (newRole) {
+      alert('올바른 역할을 입력해주세요 (viewer, creator, admin)')
+    }
+  }
 
   useEffect(() => {
     if (user?.data?.user && user.data.user.role !== 'admin') {
@@ -53,14 +81,31 @@ export default function AdminUsersPage() {
           <div className="w-8" />
         </div>
 
-        {/* 검색 */}
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="유저 ID 또는 이름으로 검색..."
-          className="w-full px-4 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:outline-none focus:border-blue-500"
-        />
+        {/* 검색 및 필터 */}
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="유저 ID 또는 이름으로 검색..."
+            className="w-full px-4 py-3 rounded-xl bg-neutral-800 border border-neutral-700 focus:outline-none focus:border-blue-500"
+          />
+          <div className="flex gap-2">
+            {['', 'viewer', 'creator', 'admin'].map((role) => (
+              <button
+                key={role}
+                onClick={() => setRoleFilter(role)}
+                className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                  roleFilter === role
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                }`}
+              >
+                {role === '' ? '전체' : role === 'viewer' ? '시청자' : role === 'creator' ? '크리에이터' : '관리자'}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* 유저 목록 */}
         <div className="space-y-2">
@@ -96,6 +141,13 @@ export default function AdminUsersPage() {
                       </span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => handleRoleChange(u.id, u.role)}
+                    disabled={changeRoleMutation.isPending}
+                    className="px-3 py-1.5 rounded-lg text-xs bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-50"
+                  >
+                    역할 변경
+                  </button>
                 </div>
               </div>
             ))

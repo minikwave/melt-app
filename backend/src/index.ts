@@ -14,7 +14,9 @@ import feedRoutes from './routes/feed';
 import creatorRoutes from './routes/creator';
 import channelRoutes from './routes/channels';
 import profileRoutes from './routes/profile';
+import badgeRoutes from './routes/badges';
 import devRoutes from './routes/dev';
+import adminRoutes from './routes/admin';
 
 dotenv.config();
 
@@ -52,8 +54,11 @@ app.use('/donations', donationRoutes);
 app.use('/messages', messageRoutes);
 app.use('/feed', feedRoutes);
 app.use('/creator', creatorRoutes);
+app.use('/creators', creatorRoutes); // 인기 크리에이터 API용 별칭
 app.use('/profile', profileRoutes);
+app.use('/badges', badgeRoutes);
 app.use('/dev', devRoutes);
+app.use('/admin', adminRoutes);
 
 // Error handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
