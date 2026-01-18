@@ -26,11 +26,21 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   // Webpack alias 설정 (Vercel 빌드 환경 호환성)
-  webpack: (config, { dir, isServer }) => {
+  webpack: (config, { dir }) => {
     // 절대 경로로 alias 설정
     // Vercel에서 Root Directory가 'web'으로 설정된 경우
-    // dir 파라미터가 제공되면 사용하고, 없으면 __dirname 사용
+    // dir은 web 폴더의 절대 경로를 가리킴
     const projectRoot = dir ? path.resolve(dir) : path.resolve(__dirname)
+    
+    // 디버깅: 빌드 시 경로 확인 (프로덕션에서는 제거 가능)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('🔧 Webpack alias 설정:', {
+        dir,
+        __dirname,
+        projectRoot,
+        cwd: process.cwd(),
+      })
+    }
     
     // resolve.modules에 현재 디렉토리 추가
     if (!config.resolve.modules) {
@@ -44,6 +54,11 @@ const nextConfig = {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': projectRoot,
+    }
+    
+    // 확장자 해결 순서 명시
+    if (!config.resolve.extensions) {
+      config.resolve.extensions = ['.js', '.jsx', '.ts', '.tsx', '.json']
     }
     
     return config
