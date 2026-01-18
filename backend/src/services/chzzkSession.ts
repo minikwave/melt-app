@@ -11,15 +11,17 @@
 import { ChzzkClient, ChzzkChat } from 'chzzk';
 import { pool } from '../db/pool';
 
-interface DonationEvent {
+// chzzk 라이브러리의 DonationEvent 타입이 버전에 따라 다를 수 있으므로
+// 필요한 필드만 인터페이스로 정의하고 실제 핸들러에서는 any로 처리
+interface DonationData {
   profile?: {
     nickname?: string;
     userIdHash?: string;
   };
   message?: string;
-  extras: {
-    payAmount: number;
-    donationType: 'CHAT' | 'VIDEO';
+  extras?: {
+    payAmount?: number;
+    donationType?: string;
     donatorChannelId?: string;
     osType?: string;
     isAnonymous?: boolean;
@@ -106,15 +108,22 @@ export class ChzzkSessionManager {
     });
 
     // 후원 이벤트 (핵심!)
-    chat.on('donation', async (donation: DonationEvent) => {
+    // 타입은 any로 받고 내부에서 안전하게 추출
+    chat.on('donation', async (donation: any) => {
+      const donationData: DonationData = {
+        profile: donation?.profile,
+        message: donation?.message,
+        extras: donation?.extras
+      };
+      
       console.log(`[ChzzkSession] Donation received on channel ${chzzkChannelId}:`, {
-        nickname: donation.profile?.nickname || '익명',
-        amount: donation.extras.payAmount,
-        message: donation.message,
-        type: donation.extras.donationType
+        nickname: donationData.profile?.nickname || '익명',
+        amount: donationData.extras?.payAmount,
+        message: donationData.message,
+        type: donationData.extras?.donationType
       });
 
-      await this.handleDonation(chzzkChannelId, donation);
+      await this.handleDonation(chzzkChannelId, donationData);
     });
 
     // 구독 이벤트 (선택적)
@@ -137,7 +146,7 @@ export class ChzzkSessionManager {
    * 
    * 치지직에서 직접 받은 데이터만 신뢰합니다.
    */
-  private async handleDonation(chzzkChannelId: string, donation: DonationEvent): Promise<void> {
+  private async handleDonation(chzzkChannelId: string, donation: DonationData): Promise<void> {
     const client = await pool.connect();
     
     try {
@@ -158,10 +167,10 @@ export class ChzzkSessionManager {
       const channelId = channelResult.rows[0].id;
 
       // 2. 후원자 조회/생성 (치지직 채널 ID로)
-      const donatorChzzkId = donation.extras.donatorChannelId || donation.profile?.userIdHash;
+      const donatorChzzkId = donation.extras?.donatorChannelId || donation.profile?.userIdHash;
       let viewerUserId: string | null = null;
 
-      if (donatorChzzkId && !donation.extras.isAnonymous) {
+      if (donatorChzzkId && !donation.extras?.isAnonymous) {
         // 기존 유저 조회
         const userResult = await client.query(
           'SELECT id FROM users WHERE chzzk_user_id = $1',
@@ -185,7 +194,8 @@ export class ChzzkSessionManager {
       // 3. 고유 도네이션 ID 생성 (중복 방지)
       // 치지직에서 제공하는 고유 ID가 없으므로 타임스탬프 + 채널 + 금액 + 메시지 해시로 생성
       const donationTimestamp = new Date().toISOString();
-      const chzzkDonationId = `${chzzkChannelId}_${donationTimestamp}_${donation.extras.payAmount}_${Buffer.from(donation.message || '').toString('base64').slice(0, 20)}`;
+      const payAmount = donation.extras?.payAmount || 0;
+      const chzzkDonationId = `${chzzkChannelId}_${donationTimestamp}_${payAmount}_${Buffer.from(donation.message || '').toString('base64').slice(0, 20)}`;
 
       // 4. 중복 체크
       const existingDonation = await client.query(
@@ -210,7 +220,7 @@ export class ChzzkSessionManager {
         [
           channelId,
           viewerUserId,
-          donation.extras.payAmount,  // 치지직에서 받은 실제 금액
+          payAmount,  // 치지직에서 받은 실제 금액
           chzzkDonationId,
           donatorChzzkId,
           donation.profile?.nickname || '익명',
@@ -243,7 +253,7 @@ export class ChzzkSessionManager {
 
       await client.query('COMMIT');
 
-      console.log(`[ChzzkSession] Donation saved: ${donation.extras.payAmount}원 from ${donation.profile?.nickname || '익명'}`);
+      console.log(`[ChzzkSession] Donation saved: ${payAmount}원 from ${donation.profile?.nickname || '익명'}`);
 
     } catch (error) {
       await client.query('ROLLBACK');
