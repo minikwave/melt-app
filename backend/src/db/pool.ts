@@ -37,18 +37,14 @@ if (databaseUrl && databaseUrl.startsWith('postgresql://')) {
       url.password = decodeURIComponent(url.password);
     }
     
-    // 프로덕션 환경에서는 sslmode=require 유지, 개발 환경에서만 disable
+    // 프로덕션 환경에서는 sslmode를 connectionString에서 제거하고 poolConfig.ssl로 관리
+    // 이렇게 하면 rejectUnauthorized: false가 제대로 적용됨
     if (process.env.NODE_ENV === 'production') {
-      // 프로덕션: sslmode=require 유지 (이미 Connection String에 포함되어 있을 수 있음)
-      if (!url.searchParams.has('sslmode')) {
-        url.searchParams.set('sslmode', 'require');
-      }
+      // connectionString에서 sslmode 제거 (poolConfig.ssl로 관리)
+      url.searchParams.delete('sslmode');
       
       // IPv6 연결 문제 해결: Supabase Connection Pooling 사용 권장
-      // 또는 호스트명을 IPv4로 해석하도록 설정
       if (url.hostname.includes('supabase.co') && url.port === '5432') {
-        // Direct connection (포트 5432) 대신 Pooling 사용 권장
-        // 하지만 일단 IPv4 우선 설정으로 시도
         console.log('💡 IPv4 연결을 시도합니다. 문제가 계속되면 Supabase Connection Pooling 사용을 권장합니다.');
       }
     } else {
